@@ -16,6 +16,8 @@ static void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x,
 			float y = flow_y.at<float>(i,j);
 			img_x.at<uchar>(i,j) = CAST(x, lowerBound, higherBound);
 			img_y.at<uchar>(i,j) = CAST(y, lowerBound, higherBound);
+      
+      
 		}
 	}
 
