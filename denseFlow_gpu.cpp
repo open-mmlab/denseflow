@@ -44,6 +44,7 @@ int main(int argc, char** argv){
 			"{ b  | bound | 15 | specify the maximum of optical flow}"
 			"{ t  | type | 0 | specify the optical flow algorithm }"
 			"{ d  | device_id    | 0  | set gpu id}"
+			"{ s  | step  | 1 | specify the step for frame sampling}"
 		};
 
 	CommandLineParser cmd(argc, argv, keys);
@@ -54,6 +55,7 @@ int main(int argc, char** argv){
 	int bound = cmd.get<int>("bound");
     int type  = cmd.get<int>("type");
     int device_id = cmd.get<int>("device_id");
+    int step = cmd.get<int>("step");
 
 	VideoCapture capture(vidFile);
 	if(!capture.isOpened()) {
@@ -84,6 +86,12 @@ int main(int argc, char** argv){
 			cvtColor(prev_image, prev_grey, CV_BGR2GRAY);
 
 			frame_num++;
+
+			int step_t = step;
+			while (step_t > 1){
+				capture >> frame;
+				step_t--;
+			}
 			continue;
 		}
 
@@ -133,6 +141,12 @@ int main(int argc, char** argv){
 		std::swap(prev_grey, grey);
 		std::swap(prev_image, image);
 		frame_num = frame_num + 1;
+
+		int step_t = step;
+		while (step_t > 1){
+			capture >> frame;
+			step_t--;
+		}
 	}
 	return 0;
 }
