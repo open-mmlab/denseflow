@@ -132,11 +132,11 @@ int main(int argc, char** argv){
 		Mat imgX_, imgY_, image_;
 		resize(imgX,imgX_,cv::Size(340,256));
 		resize(imgY,imgY_,cv::Size(340,256));
-		// resize(image,image_,cv::Size(340,256));
+		resize(image,image_,cv::Size(340,256));
 
 		imwrite(xFlowFile + tmp,imgX_);
 		imwrite(yFlowFile + tmp,imgY_);
-		// imwrite(imgFile + tmp, image_);
+		imwrite(imgFile + tmp, image_);
 
 		std::swap(prev_grey, grey);
 		std::swap(prev_image, image);
