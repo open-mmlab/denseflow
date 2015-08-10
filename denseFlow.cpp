@@ -97,7 +97,7 @@ int main(int argc, char** argv)
 		sprintf(tmp,"_%04d.jpg",int(frame_num));
 		imwrite(xFlowFile + tmp,imgX);
 		imwrite(yFlowFile + tmp,imgY);
-		imwrite(image + tmp, cflow);
+		imwrite(imgFile + tmp, cflow);
 
 		std::swap(prev_grey, grey);
 		std::swap(prev_image, image);
