@@ -110,12 +110,12 @@ void calcDenseFlowPureGPU(string file_name, int bound, int type, int step, int d
     BroxOpticalFlow alg_brox(0.197f, 50.0f, 0.8f, 10, 77, 10);
 
     bool initialized = false;
-    for(int iter = 0;; iter++){
-        bool success = video_stream.read(capture_frame);
-        if (!success) break; // read frames until end
+    while(true){
 
         //build mats for the first frame
         if (!initialized){
+            bool success = video_stream.read(capture_frame);
+            if (!success) break; // read frames until end
             capture_image.create(capture_frame.size(), CV_8UC3);
             capture_gray.create(capture_frame.size(), CV_8UC1);
 
@@ -125,7 +125,11 @@ void calcDenseFlowPureGPU(string file_name, int bound, int type, int step, int d
             capture_frame.copyTo(prev_image);
             cvtColor(prev_image, prev_gray, CV_BGR2GRAY);
             initialized = true;
-        }else if(iter % step == 0){
+
+            for (int s = 0; s < step; ++s){
+                video_stream.read(capture_frame);
+            }
+        }else {
             capture_frame.copyTo(capture_image);
             cvtColor(capture_image, capture_gray, CV_BGR2GRAY);
 
@@ -147,6 +151,10 @@ void calcDenseFlowPureGPU(string file_name, int bound, int type, int step, int d
                 }
                 default:
                     LOG(ERROR)<<"Unknown optical method: "<<type;
+            }
+
+            for (int s = 0; s < step; ++s){
+                if (!video_stream.read(capture_frame)) break;
             }
 
             //get back flow map
