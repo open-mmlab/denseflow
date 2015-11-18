@@ -27,9 +27,9 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
     BroxOpticalFlow alg_brox(0.197f, 50.0f, 0.8f, 10, 77, 10);
 
     bool initialized = false;
-    for(int iter = 0;; iter++){
+    while(true){
         video_stream >> capture_frame;
-        if (capture_frame.empty()) break; // read frames until end
+        if (capture_frame.empty()) return; // read frames until end
 
         //build mats for the first frame
         if (!initialized){
@@ -38,7 +38,11 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
             capture_frame.copyTo(prev_image);
             cvtColor(prev_image, prev_gray, CV_BGR2GRAY);
             initialized = true;
-        }else if(iter % step == 0){
+            for(int s = 0; s < step; ++s){
+                video_stream >> capture_frame;
+                if (capture_frame.empty()) return; // read frames until end
+            }
+        }else {
             capture_frame.copyTo(capture_image);
             cvtColor(capture_image, capture_gray, CV_BGR2GRAY);
             d_frame_0.upload(prev_gray);
@@ -64,6 +68,14 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
                     LOG(ERROR)<<"Unknown optical method: "<<type;
             }
 
+            //prefetch while gpu is working
+            bool hasnext = true;
+            for(int s = 0; s < step; ++s){
+                video_stream >> capture_frame;
+                hasnext = !capture_frame.empty();
+                // read frames until end
+            }
+
             //get back flow map
             d_flow_x.download(flow_x);
             d_flow_y.download(flow_y);
@@ -78,6 +90,10 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
 
             std::swap(prev_gray, capture_gray);
             std::swap(prev_image, capture_image);
+
+            if (!hasnext){
+                return;
+            }
         }
 
 

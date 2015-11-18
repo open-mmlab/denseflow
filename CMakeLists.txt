@@ -24,6 +24,3 @@ target_link_libraries( extract_cpu ${OpenCV_LIBS} denseflow)
 
 add_executable( extract_gpu tools/extract_flow_gpu.cpp)
 target_link_libraries( extract_gpu ${OpenCV_LIBS} denseflow)
-
-add_executable( extract_pure_gpu tools/extract_flow_pure_gpu.cpp)
-target_link_libraries( extract_pure_gpu ${OpenCV_LIBS} denseflow)
