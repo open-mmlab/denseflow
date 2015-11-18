@@ -11,9 +11,9 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
                       vector<vector<uchar> >& output_y,
                       vector<vector<uchar> >& output_img){
     VideoCapture video_stream(file_name);
-    CHECK(video_stream.isOpened())<<"Cannot open video stream"
+    CHECK(video_stream.isOpened())<<"Cannot open video stream \""
                                   <<file_name
-                                  <<" for optical flow extraction.";
+                                  <<"\" for optical flow extraction.";
 
     setDevice(dev_id);
     Mat capture_frame, capture_image, prev_image, capture_gray, prev_gray;
