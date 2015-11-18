@@ -19,5 +19,8 @@ include_directories( ${OpenCV_INCLUDE_DIRS} include/ include/easylogging++/src)
 add_library(denseflow src/common.cpp src/dense_flow.cpp src/dense_flow_gpu.cpp)
 target_link_libraries( denseflow ${OpenCV_LIBS})
 
-add_executable( extract_gpu denseFlow_gpu.cpp)
+add_executable( extract_cpu tools/extract_flow.cpp)
+target_link_libraries( extract_cpu ${OpenCV_LIBS} denseflow)
+
+add_executable( extract_gpu tools/extract_flow_gpu.cpp)
 target_link_libraries( extract_gpu ${OpenCV_LIBS} denseflow)

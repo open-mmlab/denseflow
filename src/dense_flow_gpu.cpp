@@ -32,7 +32,7 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
         if (capture_frame.empty()) break; // read frames until end
 
         //build mats for the first frame
-        if (~initialized){
+        if (!initialized){
             initializeMats(capture_frame, capture_image, capture_gray,
                            prev_image, prev_gray);
             capture_frame.copyTo(prev_image);
