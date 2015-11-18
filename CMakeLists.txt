@@ -17,6 +17,11 @@ endif()
 find_package( OpenCV REQUIRED )
 find_package( LibZip REQUIRED )
 
+if(LIBZIP_VERSION VERSION_LESS 0.11)
+    #old version LibZip
+    add_definitions(-DUSE_OBSEL_LIBZIP)
+endif()
+
 include_directories( ${OpenCV_INCLUDE_DIRS} ${LIBZIP_INCLUDE_DIR_ZIP} ${LIBZIP_INCLUDE_DIR_ZIPCONF} include/ include/easylogging++/src)
 
 add_library(denseflow src/common.cpp src/dense_flow.cpp src/dense_flow_gpu.cpp src/zip_utils.cpp)
