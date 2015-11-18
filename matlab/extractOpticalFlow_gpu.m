@@ -36,7 +36,7 @@ for i = index
         file2 = [path2,foldername{i},'/',filelist(j).name(1:end-4),'/','flow_x'];
         file3 = [path2,foldername{i},'/',filelist(j).name(1:end-4),'/','flow_y'];
 		file4 = [path2,foldername{i},'/',filelist(j).name(1:end-4),'/','flow_i'];
-        cmd = sprintf('./denseFlow_gpu -f %s -x %s -y %s -i %s -b 20 -t %d -d %d -s %d',...
+        cmd = sprintf('./extract_gpu -f %s -x %s -y %s -i %s -b 20 -t %d -d %d -s %d',...
             file1,file2,file3,file4,type,device_id,1);
         system(cmd);
 	end
