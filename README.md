@@ -2,7 +2,7 @@ Extracting dense flow field given a video.
 
 ####Depencies:
 - LibZip: 
-to install on ubuntu "apt-get install libzip-dev" on mac "brew intall libzip"
+to install on ubuntu ```apt-get install libzip-dev``` on mac ```brew install libzip```
 
 ###Install
 ```
