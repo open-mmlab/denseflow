@@ -75,6 +75,9 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
             output_x.push_back(str_x);
             output_y.push_back(str_y);
             output_img.push_back(str_img);
+
+            std::swap(prev_gray, capture_gray);
+            std::swap(prev_image, capture_image);
         }
 
 

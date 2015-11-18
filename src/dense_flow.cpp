@@ -45,7 +45,10 @@ void calcDenseFlow(string file_name, int bound, int type, int step,
             output_x.push_back(str_x);
             output_y.push_back(str_y);
             output_img.push_back(str_img);
-//            LOG(INFO)<<iter;
+            LOG(INFO)<<iter;
+
+            std::swap(prev_gray, capture_gray);
+            std::swap(prev_image, capture_image);
         }
     }
 
