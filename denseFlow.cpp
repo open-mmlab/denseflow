@@ -1,35 +1,4 @@
-#include "opencv2/video/tracking.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui/highgui.hpp"
-
-#include <stdio.h>
-#include <iostream>
-using namespace cv;
-
-static void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &img_y, double lowerBound, double higherBound) {
-	#define CAST(v, L, H) ((v) > (H) ? 255 : (v) < (L) ? 0 : cvRound(255*((v) - (L))/((H)-(L))))
-	for (int i = 0; i < flow_x.rows; ++i) {
-		for (int j = 0; j < flow_y.cols; ++j) {
-			float x = flow_x.at<float>(i,j);
-			float y = flow_y.at<float>(i,j);
-			img_x.at<uchar>(i,j) = CAST(x, lowerBound, higherBound);
-			img_y.at<uchar>(i,j) = CAST(y, lowerBound, higherBound);
-		}
-	}
-	#undef CAST
-}
-
-static void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,double, const Scalar& color)
-{
-    for(int y = 0; y < cflowmap.rows; y += step)
-        for(int x = 0; x < cflowmap.cols; x += step)
-        {
-            const Point2f& fxy = flow.at<Point2f>(y, x);
-            line(cflowmap, Point(x,y), Point(cvRound(x+fxy.x), cvRound(y+fxy.y)),
-                 color);
-            circle(cflowmap, Point(x,y), 2, color, -1);
-        }
-}
+#include "common.h"
 
 int main(int argc, char** argv)
 {
