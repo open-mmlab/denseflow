@@ -26,5 +26,8 @@ int main(int argc, char** argv)
 	calcDenseFlow(vidFile, bound, 0, 1,
 					 out_vec_x, out_vec_y, out_vec_img);
 
+	writeImages(out_vec_x, xFlowFile);
+	writeImages(out_vec_y, yFlowFile);
+	writeImages(out_vec_img, imgFile);
 	return 0;
 }
