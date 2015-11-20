@@ -17,3 +17,4 @@ cmake .. && make -j
 ```
 - `test.avi`: input video
 - `tmp`: folder containing RGB images and optical flow images
+- `dir`: output generated images to folder. if set to `zip`, will write images to zip files instead.
