@@ -18,7 +18,7 @@ void writeZipFile(vector<vector<uchar> >& data, string name_temp, string archive
     struct zip_source *src_ptr;
     for (int i = 0; i < data.size(); ++i) {
 
-        sprintf(name, name_temp.c_str(), i);
+        sprintf(name, name_temp.c_str(), i+1);
         if ((src_ptr = zip_source_buffer(archive, data[i].data(), data[i].size(), 0)) == NULL ||
 #ifdef USE_OBSEL_LIBZIP
             zip_add(archive, name, src_ptr) < 0) {
