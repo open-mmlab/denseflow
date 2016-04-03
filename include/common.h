@@ -5,7 +5,7 @@
 #ifndef DENSEFLOW_COMMON_H_H
 #define DENSEFLOW_COMMON_H_H
 
-#include "easylogging++.h"
+
 
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
