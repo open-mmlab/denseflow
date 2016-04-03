@@ -32,23 +32,18 @@ public:
         OpticalFlowDual_TVL1_GPU alg_tvl1;
 
 
-        printf("Initialized Mats\n");
         // initialize the first frame
         const char* first_data = ((const char*)bp::extract<const char*>(frames[0]));
         input_frame = Mat(img_height, img_width, CV_8UC3);
         initializeMats(input_frame, prev_frame, prev_gray, next_frame, next_gray);
 
-        printf("Copy to buffer, size %d %d\n", prev_frame.size[0], prev_frame.size[1]);
         memcpy(prev_frame.data, first_data, bp::len(frames[0]));
-        printf("Convert to grayscale\n");
         cvtColor(prev_frame, prev_gray, CV_BGR2GRAY);
         for (int idx = 1; idx < bp::len(frames); idx++){
-            printf("Running frame %d\n", idx);
             const char* this_data = ((const char*)bp::extract<const char*>(frames[idx]));
             memcpy(next_frame.data, this_data, bp::len(frames[0]));
             cvtColor(next_frame, next_gray, CV_BGR2GRAY);
 
-            printf("Uploading to GPU\n");
             d_frame_0.upload(prev_gray);
             d_frame_1.upload(next_gray);
 
@@ -68,7 +63,6 @@ public:
 
             std::swap(prev_gray, next_gray);
         }
-        printf("extraction done\n");
         return output;
     };
 private:
