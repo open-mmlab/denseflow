@@ -27,9 +27,7 @@ public:
         Mat input_frame, prev_frame, next_frame, prev_gray, next_gray;
         Mat flow_x, flow_y;
 
-        GpuMat d_frame_0, d_frame_1;
-        GpuMat d_flow_x, d_flow_y;
-        OpticalFlowDual_TVL1_GPU alg_tvl1;
+
 
 
         // initialize the first frame
@@ -53,7 +51,8 @@ public:
             d_flow_y.download(flow_y);
 
             vector<uchar> str_x, str_y;
-            encodeFlowMap(flow_x, flow_y, str_x, str_y, bound_);
+
+            encodeFlowMap(flow_x, flow_y, str_x, str_y, bound_, false);
             output.append(
                 bp::make_tuple(
                     bp::str((const char*) str_x.data(), str_x.size()),
@@ -67,6 +66,9 @@ public:
     };
 private:
     int bound_;
+    GpuMat d_frame_0, d_frame_1;
+    GpuMat d_flow_x, d_flow_y;
+    OpticalFlowDual_TVL1_GPU alg_tvl1;
 };
 
 

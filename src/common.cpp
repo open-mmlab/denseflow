@@ -31,15 +31,22 @@ void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,double, const Scala
 
 void encodeFlowMap(const Mat& flow_map_x, const Mat& flow_map_y,
                    vector<uchar>& encoded_x, vector<uchar>& encoded_y,
-                   int bound){
+                   int bound, bool to_jpg){
     Mat flow_img_x(flow_map_x.size(), CV_8UC1);
     Mat flow_img_y(flow_map_y.size(), CV_8UC1);
 
     convertFlowToImage(flow_map_x, flow_map_y, flow_img_x, flow_img_y,
                        -bound, bound);
 
-    imencode(".jpg", flow_img_x, encoded_x);
-    imencode(".jpg", flow_img_y, encoded_y);
+    if (to_jpg) {
+        imencode(".jpg", flow_img_x, encoded_x);
+        imencode(".jpg", flow_img_y, encoded_y);
+    }else {
+        encoded_x.resize(flow_img_x.total());
+        encoded_y.resize(flow_img_y.total());
+        memcpy(encoded_x.data(), flow_img_x.data, flow_img_x.total());
+        memcpy(encoded_y.data(), flow_img_y.data, flow_img_y.total());
+    }
 }
 
 void writeImages(vector<vector<uchar>> images, string name_temp){
