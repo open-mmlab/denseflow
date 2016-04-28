@@ -4,6 +4,7 @@
 
 #include "utils.h"
 #include "zip.h"
+#include "easylogging++.h"
 
 void writeZipFile(vector<vector<uchar> >& data, string name_temp, string archive_name){
     int err=0;

@@ -6,6 +6,7 @@
 #define DENSEFLOW_DENSE_FLOW_H
 
 #include "common.h"
+#include "easylogging++.h"
 
 void calcDenseFlow(string file_name, int bound, int type, int step,
                    vector<vector<uchar> >& output_x,

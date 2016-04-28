@@ -5,7 +5,7 @@
 #ifndef DENSEFLOW_COMMON_H_H
 #define DENSEFLOW_COMMON_H_H
 
-#include "easylogging++.h"
+
 
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -21,7 +21,7 @@ void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,double, const Scala
 
 void encodeFlowMap(const Mat& flow_map_x, const Mat& flow_map_y,
                    vector<uchar>& encoded_x, vector<uchar>& encoded_y,
-                   int bound);
+                   int bound, bool to_jpg=true);
 
 inline void initializeMats(const Mat& frame,
                            Mat& capture_image, Mat& capture_gray,

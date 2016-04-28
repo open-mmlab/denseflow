@@ -45,6 +45,7 @@ def run_optical_flow(vid_item, dev_id=0):
     flow_y_path = '{}/flow_y'.format(out_full_path)
 
     cmd = './build/extract_gpu -f {} -x {} -y {} -i {} -b 20 -t 1 -d {} -s 1 -o zip'.format(vid_path, flow_x_path, flow_y_path, image_path, dev_id)
+    #cmd = './build/extract_gpu -f {} -x {} -y {}  -b 20 -t 1 -d {} -s 1 -o zip'.format(vid_path, flow_x_path, flow_y_path,  dev_id)
 
     os.system(cmd)
     print '{} {} done'.format(vid_id, vid_name)
@@ -52,12 +53,15 @@ def run_optical_flow(vid_item, dev_id=0):
 
 
 if __name__ == '__main__':
-    out_path = '/data1/alex/anet/flow_tvl1'
+    out_path = '/data2/alex/anet_v1.2_testing_flow_tvl1'
     import glob
-    vid_list = glob.glob('/home/alex/clips/*avi')
+    #vid_list = glob.glob('/data1/alex/anet_clips_v1.2/*avi')
+    vid_list = glob.glob('/data1/alex/ActivityNet/testing_videos_v1.2/*.mp4')
+    #vid_list = ['/data1/alex/anet_clips_v1.2/{}.avi'.format(x.strip()) for x in open('/data2/alex/prob_clip_list.txt')]
     print len(vid_list)
-    pool = Pool(4)
+    pool = Pool(16)
     pool.map(run_optical_flow, zip(vid_list, xrange(len(vid_list))))
+    #map(run_optical_flow, zip(vid_list, xrange(len(vid_list))))
     #file_list = pool.map(dump_frames, vid_list)
     #all_file_list = [f for x in file_list for f in x]
     #open('anet_image_list_nov_17.txt','w').writelines('\n'.join(all_file_list))
