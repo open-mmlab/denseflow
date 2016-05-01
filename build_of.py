@@ -4,6 +4,7 @@ import cv2
 import os
 from multiprocessing import Pool, current_process
 
+import argparse
 out_path = ''
 
 
@@ -45,26 +46,52 @@ def run_optical_flow(vid_item, dev_id=0):
     flow_y_path = '{}/flow_y'.format(out_full_path)
 
     cmd = './build/extract_gpu -f {} -x {} -y {} -i {} -b 20 -t 1 -d {} -s 1 -o zip'.format(vid_path, flow_x_path, flow_y_path, image_path, dev_id)
-    #cmd = './build/extract_gpu -f {} -x {} -y {}  -b 20 -t 1 -d {} -s 1 -o zip'.format(vid_path, flow_x_path, flow_y_path,  dev_id)
 
     os.system(cmd)
     print '{} {} done'.format(vid_id, vid_name)
     return True
 
+def run_warp_optical_flow(vid_item, dev_id=0):
+    vid_path = vid_item[0]
+    vid_id = vid_item[1]
+    vid_name = vid_path.split('/')[-1].split('.')[0]
+    out_full_path = os.path.join(out_path, vid_name)
+    try:
+        os.mkdir(out_full_path)
+    except OSError:
+        pass
+
+    current = current_process()
+    dev_id = int(current._identity[0]) - 1
+    flow_x_path = '{}/flow_x'.format(out_full_path)
+    flow_y_path = '{}/flow_y'.format(out_full_path)
+
+    cmd = './build/extract_warp_gpu -f {} -x {} -y {} -b 20 -t 1 -d {} -s 1 -o zip'.format(vid_path, flow_x_path, flow_y_path, dev_id)
+
+    os.system(cmd)
+    print 'warp on {} {} done'.format(vid_id, vid_name)
+    return True
+
 
 if __name__ == '__main__':
-    out_path = '/data2/alex/anet_v1.2_testing_flow_tvl1'
-    import glob
-    #vid_list = glob.glob('/data1/alex/anet_clips_v1.2/*avi')
-    vid_list = glob.glob('/data1/alex/ActivityNet/testing_videos_v1.2/*.mp4')
-    #vid_list = ['/data1/alex/anet_clips_v1.2/{}.avi'.format(x.strip()) for x in open('/data2/alex/prob_clip_list.txt')]
+    parser = argparse.ArgumentParser(description="extract optical flows")
+    parser.add_argument("src_dir")
+    parser.add_argument("out_dir")
+    parser.add_argument("--num_worker", type=int, default=8)
+    parser.add_argument("--flow_type", type=str, default='tvl1', choices=['tvl1', 'warp_tvl1'])
+
+    args = parser.parse_args()
+
+    out_path = args.out_dir
+    src_path = args.src_dir
+    num_worker = args.num_worker
+    flow_type = args.flow_type
+
+
+    vid_list = glob.glob(src_path+'/*.mp4')
     print len(vid_list)
-    pool = Pool(16)
-    pool.map(run_optical_flow, zip(vid_list, xrange(len(vid_list))))
-    #map(run_optical_flow, zip(vid_list, xrange(len(vid_list))))
-    #file_list = pool.map(dump_frames, vid_list)
-    #all_file_list = [f for x in file_list for f in x]
-    #open('anet_image_list_nov_17.txt','w').writelines('\n'.join(all_file_list))
-    #for i,v in enumerate(vid_list):
-    #	run_optical_flow(v, 0)
-    #    print i
+    pool = Pool(num_worker)
+    if flow_type == 'tvl1':
+        pool.map(run_optical_flow, zip(vid_list, xrange(len(vid_list))))
+    elif flow_type == 'warp_tvl1':
+        pool.map(run_warp_optical_flow, zip(vid_list, xrange(len(vid_list))))
