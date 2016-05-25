@@ -189,7 +189,7 @@ BOOST_PYTHON_MODULE(libpydenseflow){
             .def("extract_flow", &TVL1FlowExtractor::extract_flow)
             .def("set_device", &TVL1FlowExtractor::set_device)
             .staticmethod("set_device");
-    bp::class_<TVL1FlowExtractor>("TVL1WarpFlowExtractor", bp::init<int>())
+    bp::class_<TVL1WarpFlowExtractor>("TVL1WarpFlowExtractor", bp::init<int>())
             .def("extract_warp_flow", &TVL1WarpFlowExtractor::extract_warp_flow)
             .def("set_device", &TVL1WarpFlowExtractor::set_device)
             .staticmethod("set_device");
