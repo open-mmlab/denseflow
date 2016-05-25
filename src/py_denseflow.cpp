@@ -19,6 +19,7 @@
 #include "opencv2/gpu/gpu.hpp"
 #include "opencv2/gpu/gpu.hpp"
 
+#include "warp_flow.h"
 
 using namespace cv::gpu;
 using namespace cv;
@@ -85,14 +86,7 @@ private:
     OpticalFlowDual_TVL1_GPU alg_tvl1;
 };
 
-extern void MyWarpPerspective(Mat& prev_src, Mat& src, Mat& dst, Mat& M0, int flags = INTER_LINEAR,
-                       int borderType = BORDER_CONSTANT, const Scalar& borderValue = Scalar());
-extern void ComputeMatch(const std::vector<KeyPoint>& prev_kpts, const std::vector<KeyPoint>& kpts,
-                  const Mat& prev_desc, const Mat& desc, std::vector<Point2f>& prev_pts, std::vector<Point2f>& pts);
-extern void MergeMatch(const std::vector<Point2f>& prev_pts1, const std::vector<Point2f>& pts1,
-                       const std::vector<Point2f>& prev_pts2, const std::vector<Point2f>& pts2,
-                       std::vector<Point2f>& prev_pts_all, std::vector<Point2f>& pts_all);
-extern void MatchFromFlow_copy(const Mat& prev_grey, const Mat& flow_x, const Mat& flow_y, std::vector<Point2f>& prev_pts, std::vector<Point2f>& pts, const Mat& mask);
+
 
 class TVL1WarpFlowExtractor {
 public:
