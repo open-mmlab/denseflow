@@ -18,6 +18,8 @@ int main(int argc, char** argv){
 			"{ d  | device_id    | 0  | set gpu id}"
 			"{ s  | step  | 1 | specify the step for frame sampling}"
 			"{ o  | out | zip | output style}"
+			"{ w  | newWidth | 0 | output style}"
+			"{ h  | newHeight | 0 | output style}"
 		};
 
 	CommandLineParser cmd(argc, argv, keys);
@@ -30,6 +32,8 @@ int main(int argc, char** argv){
     int type  = cmd.get<int>("type");
     int device_id = cmd.get<int>("device_id");
     int step = cmd.get<int>("step");
+    int new_height = cmd.get<int>("newHeight");
+    int new_width = cmd.get<int>("newWidth");
 
 	vector<vector<uchar> > out_vec_x, out_vec_y, out_vec_img;
 

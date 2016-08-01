@@ -15,7 +15,8 @@ void calcDenseFlow(string file_name, int bound, int type, int step,
 void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_id,
                       vector<vector<uchar> >& output_x,
                       vector<vector<uchar> >& output_y,
-                      vector<vector<uchar> >& output_img);
+                      vector<vector<uchar> >& output_img,
+                      int new_width=0, int new_height=0);
 
 void calcDenseFlowPureGPU(string file_name, int bound, int type, int step, int dev_id,
                       vector<vector<uchar> >& output_x,

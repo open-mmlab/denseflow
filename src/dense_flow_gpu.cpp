@@ -9,7 +9,8 @@ using namespace cv::gpu;
 void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_id,
                       vector<vector<uchar> >& output_x,
                       vector<vector<uchar> >& output_y,
-                      vector<vector<uchar> >& output_img){
+                      vector<vector<uchar> >& output_img,
+                      int new_width, int new_height){
     VideoCapture video_stream(file_name);
     CHECK(video_stream.isOpened())<<"Cannot open video stream \""
                                   <<file_name
@@ -18,6 +19,7 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
     setDevice(dev_id);
     Mat capture_frame, capture_image, prev_image, capture_gray, prev_gray;
     Mat flow_x, flow_y;
+    Size new_size(new_width, new_height);
 
     GpuMat d_frame_0, d_frame_1;
     GpuMat d_flow_x, d_flow_y;
@@ -25,6 +27,8 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
     FarnebackOpticalFlow alg_farn;
     OpticalFlowDual_TVL1_GPU alg_tvl1;
     BroxOpticalFlow alg_brox(0.197f, 50.0f, 0.8f, 10, 77, 10);
+
+    bool do_resize = (new_height > 0) && (new_width > 0);
 
     bool initialized = false;
     int cnt = 0;
@@ -34,9 +38,18 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
         if (!initialized){
            video_stream >> capture_frame;
            if (capture_frame.empty()) return; // read frames until end
-           initializeMats(capture_frame, capture_image, capture_gray,
+
+            if (!do_resize){
+                initializeMats(capture_frame, capture_image, capture_gray,
                            prev_image, prev_gray);
-            capture_frame.copyTo(prev_image);
+                capture_frame.copyTo(prev_image);
+            }else{
+                capture_image.create(new_size, CV_8UC3);
+                capture_gray.create(new_size, CV_8UC1);
+                prev_image.create(new_size, CV_8UC3);
+                prev_gray.create(new_size, CV_8UC1);
+                cv::resize(capture_frame, prev_image, new_size);
+            }
             cvtColor(prev_image, prev_gray, CV_BGR2GRAY);
             initialized = true;
             for(int s = 0; s < step; ++s){
@@ -45,7 +58,11 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
                 if (capture_frame.empty()) return; // read frames until end
             }
         }else {
-            capture_frame.copyTo(capture_image);
+            if (!do_resize)
+                capture_frame.copyTo(capture_image);
+            else
+                cv::resize(capture_frame, capture_image, new_size);
+            
             cvtColor(capture_image, capture_gray, CV_BGR2GRAY);
             d_frame_0.upload(prev_gray);
             d_frame_1.upload(capture_gray);
