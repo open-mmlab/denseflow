@@ -38,7 +38,7 @@ int main(int argc, char** argv){
 	vector<vector<uchar> > out_vec_x, out_vec_y, out_vec_img;
 
 	calcDenseFlowGPU(vidFile, bound, type, step, device_id,
-					 out_vec_x, out_vec_y, out_vec_img);
+					 out_vec_x, out_vec_y, out_vec_img, new_width, new_height);
 
 	if (output_style == "dir") {
 		writeImages(out_vec_x, xFlowFile);
