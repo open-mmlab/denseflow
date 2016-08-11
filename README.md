@@ -21,3 +21,26 @@ cmake .. && make -j
 - `test.avi`: input video
 - `tmp`: folder containing RGB images and optical flow images
 - `dir`: output generated images to folder. if set to `zip`, will write images to zip files instead.
+
+### Warp Flow
+The warp optical flow is used in the following paper
+
+```
+@inproceedings{TSN2016ECCV,
+  author    = {Limin Wang and
+               Yuanjun Xiong and
+               Zhe Wang and
+               Yu Qiao and
+               Dahua Lin and
+               Xiaoou Tang and
+               Luc {Val Gool}},
+  title     = {Temporal Segment Networks: Towards Good Practices for Deep Action Recognition},
+  booktitle   = {ECCV},
+  year      = {2016},
+}
+```
+
+To extract warp flow, use the command
+```
+./extract_warp_gpu -f test.avi -x tmp/flow_x -y tmp/flow_y -i tmp/image -b 20 -t 1 -d 0 -s 1 -o dir
+```
