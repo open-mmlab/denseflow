@@ -33,7 +33,7 @@ The warp optical flow is used in the following paper
                Yu Qiao and
                Dahua Lin and
                Xiaoou Tang and
-               Luc {Val Gool}},
+               Luc {Van Gool}},
   title     = {Temporal Segment Networks: Towards Good Practices for Deep Action Recognition},
   booktitle   = {ECCV},
   year      = {2016},
