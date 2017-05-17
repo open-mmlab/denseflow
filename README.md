@@ -1,20 +1,20 @@
 Extracting dense flow field given a video.
 
-####Depencies:
+#### Depencies:
 - LibZip: 
 to install on ubuntu ```apt-get install libzip-dev``` on mac ```brew install libzip```
 
 #### For OpenCV 3 Users
 Please see the [opencv-3.1](https://github.com/yjxiong/dense_flow/tree/opencv-3.1) branch. Many thanks to @victorhcm for the contributions!
 
-###Install
+### Install
 ```
 git clone --recursive http://github.com/yjxiong/dense_flow
 mkdir build && cd build
 cmake .. && make -j
 ```
 
-###Usage
+### Usage
 ```
 ./extract_gpu -f test.avi -x tmp/flow_x -y tmp/flow_y -i tmp/image -b 20 -t 1 -d 0 -s 1 -o dir
 ```
