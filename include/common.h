@@ -14,13 +14,15 @@
 #include <stdio.h>
 #include <iostream>
 using namespace cv;
+using std::string;
+using std::vector;
 
 void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &img_y,
                         double lowerBound, double higherBound);
 void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,double, const Scalar& color);
 
 void encodeFlowMap(const Mat& flow_map_x, const Mat& flow_map_y,
-                   vector<uchar>& encoded_x, vector<uchar>& encoded_y,
+                   std::vector<uchar>& encoded_x, std::vector<uchar>& encoded_y,
                    int bound, bool to_jpg=true);
 
 inline void initializeMats(const Mat& frame,
@@ -33,7 +35,7 @@ inline void initializeMats(const Mat& frame,
     prev_gray.create(frame.size(), CV_8UC1);
 }
 
-void writeImages(vector<vector<uchar>> images, string name_temp);
+void writeImages(std::vector<std::vector<uchar>> images, std::string name_temp);
 
 #endif //DENSEFLOW_COMMON_H_H
 

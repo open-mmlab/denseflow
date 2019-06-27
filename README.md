@@ -16,7 +16,7 @@ cmake .. && make -j
 
 ### Usage
 ```
-./extract_gpu -f test.avi -x tmp/flow_x -y tmp/flow_y -i tmp/image -b 20 -t 1 -d 0 -s 1 -o dir
+./extract_gpu -f=test.avi -x=tmp/flow_x -y=tmp/flow_y -i=tmp/image -b=20 -t=1 -d=0 -s=1 -o=dir
 ```
 - `test.avi`: input video
 - `tmp`: folder containing RGB images and optical flow images

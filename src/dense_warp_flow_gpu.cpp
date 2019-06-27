@@ -9,9 +9,10 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/core/core.hpp"
-#include "opencv2/nonfree/nonfree.hpp"
-#include "opencv2/gpu/gpu.hpp"
-#include "opencv2/gpu/gpu.hpp"
+#include "opencv2/xfeatures2d.hpp"
+#include "opencv2/cudaarithm.hpp"
+#include "opencv2/cudaoptflow.hpp"
+#include "opencv2/cudacodec.hpp"
 
 #include <stdio.h>
 #include <iostream>
@@ -19,18 +20,23 @@
 #include "warp_flow.h"
 
 using namespace cv;
-using namespace cv::gpu;
+using namespace cv::cuda;
+using namespace std;
 
 void calcDenseWarpFlowGPU(string file_name, int bound, int type, int step, int dev_id,
-					  vector<vector<uchar> >& output_x,
-					  vector<vector<uchar> >& output_y){
+					  std::vector<std::vector<uchar> >& output_x,
+					  std::vector<std::vector<uchar> >& output_y){
 	VideoCapture video_stream(file_name);
 	CHECK(video_stream.isOpened())<<"Cannot open video stream \""
 								  <<file_name
 								  <<"\" for optical flow extraction.";
 
-	SurfFeatureDetector detector_surf(200);
-	SurfDescriptorExtractor extractor_surf(true, true);
+    // OpenCV 3.1.0 SURF interface
+    //
+    // source: http://stackoverflow.com/a/27533437/957997 
+    //  http://stackoverflow.com/questions/27533203/how-do-i-use-sift-in-opencv-3-0-with-c
+    cv::Ptr<Feature2D> detector_surf = xfeatures2d::SurfFeatureDetector::create(200);
+    cv::Ptr<Feature2D> extractor_surf = xfeatures2d::SurfDescriptorExtractor::create(true, true);
 	std::vector<Point2f> prev_pts_flow, pts_flow;
 	std::vector<Point2f> prev_pts_surf, pts_surf;
 	std::vector<Point2f> prev_pts_all, pts_all;
@@ -42,11 +48,11 @@ void calcDenseWarpFlowGPU(string file_name, int bound, int type, int step, int d
 	Mat flow_x, flow_y;
 
 	GpuMat d_frame_0, d_frame_1;
-	GpuMat d_flow_x, d_flow_y;
+    GpuMat d_flow;
 
-	FarnebackOpticalFlow alg_farn;
-	OpticalFlowDual_TVL1_GPU alg_tvl1;
-	BroxOpticalFlow alg_brox(0.197f, 50.0f, 0.8f, 10, 77, 10);
+	cv::Ptr<cuda::FarnebackOpticalFlow> alg_farn = cuda::FarnebackOpticalFlow::create();
+	cv::Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
+	cv::Ptr<cuda::BroxOpticalFlow> alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
 
 	bool initialized = false;
 	int cnt = 0;
@@ -59,12 +65,13 @@ void calcDenseWarpFlowGPU(string file_name, int bound, int type, int step, int d
 			initializeMats(capture_frame, capture_image, capture_gray,
 						   prev_image, prev_gray);
 			capture_frame.copyTo(prev_image);
-			cvtColor(prev_image, prev_gray, CV_BGR2GRAY);
+			cvtColor(prev_image, prev_gray, COLOR_BGR2GRAY);
 
 			//detect key points
 			human_mask = Mat::ones(capture_frame.size(), CV_8UC1);
-			detector_surf.detect(prev_gray, prev_kpts_surf, human_mask);
-			extractor_surf.compute(prev_gray, prev_kpts_surf, prev_desc_surf);
+			detector_surf->detect(prev_gray, prev_kpts_surf, human_mask); 
+			extractor_surf->compute(prev_gray, prev_kpts_surf, prev_desc_surf);
+            // TODO! check detector_surf->detectAndCompute()
 
 			initialized = true;
 			for(int s = 0; s < step; ++s){
@@ -74,39 +81,40 @@ void calcDenseWarpFlowGPU(string file_name, int bound, int type, int step, int d
 			}
 		}else {
 			capture_frame.copyTo(capture_image);
-			cvtColor(capture_image, capture_gray, CV_BGR2GRAY);
+			cvtColor(capture_image, capture_gray, COLOR_BGR2GRAY);
 			d_frame_0.upload(prev_gray);
 			d_frame_1.upload(capture_gray);
 
 			switch(type){
 				case 0: {
-					alg_farn(d_frame_0, d_frame_1, d_flow_x, d_flow_y);
+					alg_farn->calc(d_frame_0, d_frame_1, d_flow);
 					break;
 				}
 				case 1: {
-					alg_tvl1(d_frame_0, d_frame_1, d_flow_x, d_flow_y);
+					alg_tvl1->calc(d_frame_0, d_frame_1, d_flow);
 					break;
 				}
 				case 2: {
 					GpuMat d_buf_0, d_buf_1;
 					d_frame_0.convertTo(d_buf_0, CV_32F, 1.0 / 255.0);
 					d_frame_1.convertTo(d_buf_1, CV_32F, 1.0 / 255.0);
-					alg_brox(d_buf_0, d_buf_1, d_flow_x, d_flow_y);
+					alg_brox->calc(d_buf_0, d_buf_1, d_flow);
 					break;
 				}
 				default:
 					LOG(ERROR)<<"Unknown optical method: "<<type;
 			}
 
-
+            GpuMat planes[2];
+            cuda::split(d_flow, planes);
 
 			//get back flow map
-			d_flow_x.download(flow_x);
-			d_flow_y.download(flow_y);
+            Mat flow_x(planes[0]);
+            Mat flow_y(planes[1]);
 
 			// warp to reduce holistic motion
-			detector_surf.detect(capture_gray, kpts_surf, human_mask);
-			extractor_surf.compute(capture_gray, kpts_surf, desc_surf);
+			detector_surf->detect(capture_gray, kpts_surf, human_mask);
+			extractor_surf->compute(capture_gray, kpts_surf, desc_surf);
 			ComputeMatch(prev_kpts_surf, kpts_surf, prev_desc_surf, desc_surf, prev_pts_surf, pts_surf);
 			MatchFromFlow_copy(capture_gray, flow_x, flow_y, prev_pts_flow, pts_flow, human_mask);
 			MergeMatch(prev_pts_flow, pts_flow, prev_pts_surf, pts_surf, prev_pts_all, pts_all);
@@ -114,7 +122,7 @@ void calcDenseWarpFlowGPU(string file_name, int bound, int type, int step, int d
 			if(pts_all.size() > 50) {
 				std::vector<unsigned char> match_mask;
 				Mat temp = findHomography(prev_pts_all, pts_all, RANSAC, 1, match_mask);
-				if(countNonZero(Mat(match_mask)) > 25)
+				if(cv::countNonZero(Mat(match_mask)) > 25)
 					H = temp;
 			}
 
@@ -128,18 +136,18 @@ void calcDenseWarpFlowGPU(string file_name, int bound, int type, int step, int d
 
 			switch(type){
 				case 0: {
-					alg_farn(d_frame_0, d_frame_1, d_flow_x, d_flow_y);
+					alg_farn->calc(d_frame_0, d_frame_1, d_flow);
 					break;
 				}
 				case 1: {
-					alg_tvl1(d_frame_0, d_frame_1, d_flow_x, d_flow_y);
+					alg_tvl1->calc(d_frame_0, d_frame_1, d_flow);
 					break;
 				}
 				case 2: {
 					GpuMat d_buf_0, d_buf_1;
 					d_frame_0.convertTo(d_buf_0, CV_32F, 1.0 / 255.0);
 					d_frame_1.convertTo(d_buf_1, CV_32F, 1.0 / 255.0);
-					alg_brox(d_buf_0, d_buf_1, d_flow_x, d_flow_y);
+					alg_brox->calc(d_buf_0, d_buf_1, d_flow);
 					break;
 				}
 				default:
@@ -147,10 +155,10 @@ void calcDenseWarpFlowGPU(string file_name, int bound, int type, int step, int d
 			}
 
 
-
 			//get back flow map
-			d_flow_x.download(flow_x);
-			d_flow_y.download(flow_y);
+            cuda::split(d_flow, planes);
+            planes[0].download(flow_x);
+            planes[1].download(flow_y);
 
 			vector<uchar> str_x, str_y;
 			encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);

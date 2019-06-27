@@ -5,7 +5,9 @@
 
 
 #include "common.h"
-#include "opencv2/gpu/gpu.hpp"
+#include "opencv2/cudaarithm.hpp"
+#include "opencv2/cudaoptflow.hpp"
+#include "opencv2/cudacodec.hpp"
 
 #include "opencv2/video/tracking.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
@@ -15,13 +17,11 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/features2d/features2d.hpp"
 #include "opencv2/core/core.hpp"
-#include "opencv2/nonfree/nonfree.hpp"
-#include "opencv2/gpu/gpu.hpp"
-#include "opencv2/gpu/gpu.hpp"
+#include "opencv2/xfeatures2d.hpp"
 
 #include "warp_flow.h"
 
-using namespace cv::gpu;
+using namespace cv::cuda;
 using namespace cv;
 
 namespace bp = boost::python;
@@ -30,6 +30,7 @@ class TVL1FlowExtractor{
 public:
 
     TVL1FlowExtractor(int bound){
+        alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
         bound_ = bound;
     }
 
@@ -51,21 +52,23 @@ public:
         initializeMats(input_frame, prev_frame, prev_gray, next_frame, next_gray);
 
         memcpy(prev_frame.data, first_data, bp::len(frames[0]));
-        cvtColor(prev_frame, prev_gray, CV_BGR2GRAY);
+        cvtColor(prev_frame, prev_gray, COLOR_BGR2GRAY);
         for (int idx = 1; idx < bp::len(frames); idx++){
             const char* this_data = ((const char*)bp::extract<const char*>(frames[idx]));
             memcpy(next_frame.data, this_data, bp::len(frames[0]));
-            cvtColor(next_frame, next_gray, CV_BGR2GRAY);
+            cvtColor(next_frame, next_gray, COLOR_BGR2GRAY);
 
             d_frame_0.upload(prev_gray);
             d_frame_1.upload(next_gray);
 
-            alg_tvl1(d_frame_0, d_frame_1, d_flow_x, d_flow_y);
+            alg_tvl1->calc(d_frame_0, d_frame_1, d_flow);
 
-            d_flow_x.download(flow_x);
-            d_flow_y.download(flow_y);
+            GpuMat planes[2];
+            cuda::split(d_flow, planes);
+            planes[0].download(flow_x);
+            planes[1].download(flow_y);
 
-            vector<uchar> str_x, str_y;
+            std::vector<uchar> str_x, str_y;
 
             encodeFlowMap(flow_x, flow_y, str_x, str_y, bound_, false);
             output.append(
@@ -82,8 +85,8 @@ public:
 private:
     int bound_;
     GpuMat d_frame_0, d_frame_1;
-    GpuMat d_flow_x, d_flow_y;
-    OpticalFlowDual_TVL1_GPU alg_tvl1;
+    GpuMat d_flow;
+    cv::Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1;
 };
 
 
@@ -91,8 +94,10 @@ private:
 class TVL1WarpFlowExtractor {
 public:
 
-    TVL1WarpFlowExtractor(int bound)
-        :detector_surf(200), extractor_surf(true, true){
+    TVL1WarpFlowExtractor(int bound) {
+        alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
+        detector_surf = xfeatures2d::SurfFeatureDetector::create(200);
+        extractor_surf = xfeatures2d::SurfDescriptorExtractor::create(true, true);
         bound_ = bound;
     }
 
@@ -112,23 +117,25 @@ public:
         human_mask = Mat::ones(input_frame.size(), CV_8UC1);
 
         memcpy(prev_frame.data, first_data, bp::len(frames[0]));
-        cvtColor(prev_frame, prev_gray, CV_BGR2GRAY);
+        cvtColor(prev_frame, prev_gray, COLOR_BGR2GRAY);
         for (int idx = 1; idx < bp::len(frames); idx++){
             const char* this_data = ((const char*)bp::extract<const char*>(frames[idx]));
             memcpy(next_frame.data, this_data, bp::len(frames[0]));
-            cvtColor(next_frame, next_gray, CV_BGR2GRAY);
+            cvtColor(next_frame, next_gray, COLOR_BGR2GRAY);
 
             d_frame_0.upload(prev_gray);
             d_frame_1.upload(next_gray);
 
-            alg_tvl1(d_frame_0, d_frame_1, d_flow_x, d_flow_y);
+            alg_tvl1->calc(d_frame_0, d_frame_1, d_flow);
 
-            d_flow_x.download(flow_x);
-            d_flow_y.download(flow_y);
+            GpuMat planes[2];
+            cuda::split(d_flow, planes);
+            planes[0].download(flow_x);
+            planes[1].download(flow_y);
 
             // warp to reduce holistic motion
-            detector_surf.detect(next_gray, kpts_surf, human_mask);
-            extractor_surf.compute(next_gray, kpts_surf, desc_surf);
+            detector_surf->detect(next_gray, kpts_surf, human_mask);
+            extractor_surf->compute(next_gray, kpts_surf, desc_surf);
             ComputeMatch(prev_kpts_surf, kpts_surf, prev_desc_surf, desc_surf, prev_pts_surf, pts_surf);
             MatchFromFlow_copy(next_gray, flow_x, flow_y, prev_pts_flow, pts_flow, human_mask);
             MergeMatch(prev_pts_flow, pts_flow, prev_pts_surf, pts_surf, prev_pts_all, pts_all);
@@ -136,7 +143,7 @@ public:
             if(pts_all.size() > 50) {
                 std::vector<unsigned char> match_mask;
                 Mat temp = findHomography(prev_pts_all, pts_all, RANSAC, 1, match_mask);
-                if(countNonZero(Mat(match_mask)) > 25)
+                if(cv::countNonZero(Mat(match_mask)) > 25)
                     H = temp;
             }
 
@@ -147,12 +154,13 @@ public:
             d_frame_0.upload(prev_gray);
             d_frame_1.upload(gray_warp);
 
-            alg_tvl1(d_frame_0, d_frame_1, d_flow_x, d_flow_y);
+            alg_tvl1->calc(d_frame_0, d_frame_1, d_flow);
 
-            d_flow_x.download(flow_x);
-            d_flow_y.download(flow_y);
+            cuda::split(d_flow, planes);
+            planes[0].download(flow_x);
+            planes[1].download(flow_y);
 
-            vector<uchar> str_x, str_y;
+            std::vector<uchar> str_x, str_y;
 
             encodeFlowMap(flow_x, flow_y, str_x, str_y, bound_, false);
             output.append(
@@ -167,8 +175,8 @@ public:
         return output;
     }
 private:
-    SurfFeatureDetector detector_surf;
-    SurfDescriptorExtractor extractor_surf;
+    cv::Ptr<Feature2D> detector_surf; 
+    cv::Ptr<Feature2D> extractor_surf; 
     std::vector<Point2f> prev_pts_flow, pts_flow;
     std::vector<Point2f> prev_pts_surf, pts_surf;
     std::vector<Point2f> prev_pts_all, pts_all;
@@ -176,9 +184,9 @@ private:
     Mat prev_desc_surf, desc_surf;
 
     GpuMat d_frame_0, d_frame_1;
-    GpuMat d_flow_x, d_flow_y;
+    GpuMat d_flow;
 
-    OpticalFlowDual_TVL1_GPU alg_tvl1;
+    cv::Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1;
     int bound_;
 };
 

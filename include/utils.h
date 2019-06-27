@@ -7,6 +7,6 @@
 
 #include "common.h"
 
-void writeZipFile(vector<vector<uchar> >& data, string name_temp, string archive_name);
+void writeZipFile(std::vector<std::vector<uchar> >& data, std::string name_temp, std::string archive_name);
 
 #endif //DENSEFLOW_UTILS_H
