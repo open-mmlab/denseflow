@@ -59,4 +59,3 @@ void writeImages(std::vector<std::vector<uchar>> images, std::string name_temp){
         fclose(fp);
     }
 }
-

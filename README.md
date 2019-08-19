@@ -1,7 +1,7 @@
 Extracting dense flow field given a video.
 
-#### Depencies:
-- LibZip: 
+#### Dependencies:
+- LibZip:
 to install on ubuntu ```apt-get install libzip-dev``` on mac ```brew install libzip```
 
 #### For OpenCV 3 Users

@@ -66,7 +66,7 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
                 capture_frame.copyTo(capture_image);
             else
                 cv::resize(capture_frame, capture_image, new_size);
-            
+
             cvtColor(capture_image, capture_gray, COLOR_BGR2GRAY);
             d_frame_0.upload(prev_gray);
             d_frame_1.upload(capture_gray);

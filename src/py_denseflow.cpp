@@ -175,8 +175,8 @@ public:
         return output;
     }
 private:
-    cv::Ptr<Feature2D> detector_surf; 
-    cv::Ptr<Feature2D> extractor_surf; 
+    cv::Ptr<Feature2D> detector_surf;
+    cv::Ptr<Feature2D> extractor_surf;
     std::vector<Point2f> prev_pts_flow, pts_flow;
     std::vector<Point2f> prev_pts_surf, pts_surf;
     std::vector<Point2f> prev_pts_all, pts_all;

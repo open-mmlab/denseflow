@@ -69,4 +69,3 @@ if __name__ == "__main__":
         f = FlowExtractor(dev_id=0)
         flow_frames = f.extract_flow(frame_list)
         save_optical_flow(output_folder, flow_frames)
-
