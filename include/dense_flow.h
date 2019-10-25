@@ -18,6 +18,9 @@ void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_i
                       vector<vector<uchar> >& output_img,
                       int new_width=0, int new_height=0);
 
+void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_root_dir, int bound, int type, int dev_id,
+                      int new_width=0, int new_height=0);
+
 void calcDenseFlowPureGPU(std::string file_name, int bound, int type, int step, int dev_id,
                       std::vector<std::vector<uchar> >& output_x,
                       std::vector<std::vector<uchar> >& output_y,

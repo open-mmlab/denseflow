@@ -49,13 +49,32 @@ void encodeFlowMap(const Mat& flow_map_x, const Mat& flow_map_y,
     }
 }
 
-void writeImages(std::vector<std::vector<uchar>> images, std::string name_temp){
-    for (int i = 0; i < images.size(); ++i){
+void writeImages(std::vector<std::vector<uchar>> images, std::string name_temp, const int base){
+    for (int i = base; i < images.size()+base; ++i){
         char tmp[256];
         sprintf(tmp, "_%05d.jpg", i+1);
         FILE* fp;
         fp = fopen((name_temp + tmp).c_str(), "wb");
         fwrite( images[i].data(), 1, images[i].size(), fp);
         fclose(fp);
+    }
+}
+
+void writeImagesV2(std::vector<std::vector<uchar> > images,
+        std::vector<std::vector<uchar> > flow_x, std::vector<std::vector<uchar> > flow_y,
+        std::vector<std::string> names, const string& output_root_dir) {
+    for (int i=0; i<names.size(); i++) {
+        // xx.jpg as default image formate
+        // std::cout << output_root_dir+"/flow_i_"+names[i]<< std::endl;
+        FILE* fp_img, *fp_x, *fp_y;
+        fp_img = fopen((output_root_dir+"/flow_i_"+names[i]).c_str(), "wb");
+        fp_x = fopen((output_root_dir+"/flow_x_"+names[i]).c_str(), "wb");
+        fp_y = fopen((output_root_dir+"/flow_y_"+names[i]).c_str(), "wb");
+        fwrite( images[i].data(), 1, images[i].size(), fp_img);
+        fwrite( flow_x[i].data(), 1, flow_x[i].size(), fp_x);
+        fwrite( flow_y[i].data(), 1, flow_y[i].size(), fp_y);
+        fclose(fp_img);
+        fclose(fp_x);
+        fclose(fp_y);
     }
 }
