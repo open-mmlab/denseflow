@@ -49,14 +49,14 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
     string vid_name = vid_splits[vid_splits.size() - 1];
     string hdf5_savepath = output_root_dir + "/" + vid_name + ".h5";
     file_id = H5Fcreate(hdf5_savepath.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
     while (true) {
 
         // build mats for the first frame
         if (!initialized) {
             getline(ifs, curr_line);
-            // std::cout << root_dir+"/"+curr_line << std::endl;
-            capture_frame =
-                cv::imread(root_dir + "/" + curr_line, CV_LOAD_IMAGE_COLOR); // video_stream >> capture_frame;
+            // std::cout << root_dir + "/" + curr_line << std::endl;
+            capture_frame = cv::imread(root_dir + "/" + curr_line, IMREAD_COLOR); // video_stream >> capture_frame;
             if (capture_frame.empty())
                 return; // read frames until end
 
@@ -70,7 +70,7 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 prev_gray.create(new_size, CV_8UC1);
                 cv::resize(capture_frame, prev_image, new_size);
             }
-            cvtColor(prev_image, prev_gray, CV_BGR2GRAY);
+            cvtColor(prev_image, prev_gray, cv::COLOR_BGR2GRAY);
             initialized = true;
             cnt++;
         } else {
@@ -79,7 +79,7 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             else
                 cv::resize(capture_frame, capture_image, new_size);
 
-            cvtColor(capture_image, capture_gray, CV_BGR2GRAY);
+            cvtColor(capture_image, capture_gray, cv::COLOR_BGR2GRAY);
             d_frame_0.upload(prev_gray);
             d_frame_1.upload(capture_gray);
 
@@ -122,6 +122,8 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                         }
             */
             // save as .h5
+            // std::cout << "file_id " << file_id << ", curr_line " << curr_line << (", /" + curr_line).c_str()
+            //           << std::endl;
             frame_id = H5Gcreate(file_id, ("/" + curr_line).c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
             string flow_x_dataset = "/" + curr_line + "/flow_x";
             string flow_y_dataset = "/" + curr_line + "/flow_y";
@@ -156,11 +158,10 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             }
 
             // prefetch while gpu is working
-            bool hasnext = getline(ifs, curr_line);
+            bool hasnext = (bool)getline(ifs, curr_line);
             if (hasnext) {
                 // std::cout << root_dir+"/"+curr_line << std::endl;
-                capture_frame =
-                    cv::imread(root_dir + "/" + curr_line, CV_LOAD_IMAGE_COLOR); // video_stream >> capture_frame;
+                capture_frame = cv::imread(root_dir + "/" + curr_line, IMREAD_COLOR); // video_stream >> capture_frame;
                 cnt++;
             }
 

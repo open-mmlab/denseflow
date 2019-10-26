@@ -1,8 +1,8 @@
 #include "hdf5_utils.hpp"
 
 void hdf5_save_nd_dataset(const hid_t file_id, const string &dataset_name, const cv::Mat &mat) {
-    //    std::cout<<"type: "<<mat.type()<<", rows: "<<mat.rows<<", cols: "<<mat.cols<<", channels:
-    //    "<<mat.channels()<<std::endl;
+    // std::cout << "type: " << mat.type() << ", rows: " << mat.rows << ", cols: " << mat.cols
+    //           << ", channels:" << mat.channels() << std::endl;
 
     int num_axes = mat.channels() == 1 ? 2 : mat.channels();
     hsize_t *dims = new hsize_t[num_axes];
