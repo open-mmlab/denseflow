@@ -8,6 +8,7 @@
 #include "opencv2/cudaoptflow.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include "utils.h"
+#include <ctime>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -43,12 +44,19 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
     vector<string> names;
     hid_t file_id, frame_id; // hdf5
     herr_t status;
-    const int save_duration = 512;
+    const int save_duration = 128;
     vector<string> vid_splits;
     SplitString(root_dir, vid_splits, "/");
     string vid_name = vid_splits[vid_splits.size() - 1];
     string hdf5_savepath = output_root_dir + "/" + vid_name + ".h5";
     file_id = H5Fcreate(hdf5_savepath.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    double t_upload = 0;
+    double t_flow = 0;
+    double t_splitflow = 0;
+    double t_h5 = 0;
+    double t_writeh5 = 0;
+    double t_fetch = 0;
+    double t_swp = 0;
 
     while (true) {
 
@@ -74,6 +82,7 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             initialized = true;
             cnt++;
         } else {
+            std::clock_t begin = std::clock();
             if (!do_resize)
                 capture_frame.copyTo(capture_image);
             else
@@ -82,6 +91,8 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             cvtColor(capture_image, capture_gray, cv::COLOR_BGR2GRAY);
             d_frame_0.upload(prev_gray);
             d_frame_1.upload(capture_gray);
+            std::clock_t upload = std::clock();
+            t_upload += double(upload - begin) / CLOCKS_PER_SEC;
 
             switch (type) {
             case 0: {
@@ -89,6 +100,8 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 break;
             }
             case 1: {
+                // if (cnt > 1)
+                //     alg_tvl1->setUseInitialFlow(true);
                 alg_tvl1->calc(d_frame_0, d_frame_1, d_flow);
                 break;
             }
@@ -102,6 +115,8 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             default:
                 LOG(ERROR) << "Unknown optical method: " << type;
             }
+            std::clock_t tvl1 = std::clock();
+            t_flow += double(tvl1 - upload) / CLOCKS_PER_SEC;
 
             GpuMat planes[2];
             cuda::split(d_flow, planes);
@@ -124,12 +139,16 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             // save as .h5
             // std::cout << "file_id " << file_id << ", curr_line " << curr_line << (", /" + curr_line).c_str()
             //           << std::endl;
+            std::clock_t beforeh5 = std::clock();
+            t_splitflow += double(beforeh5 - tvl1) / CLOCKS_PER_SEC;
             frame_id = H5Gcreate(file_id, ("/" + curr_line).c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
             string flow_x_dataset = "/" + curr_line + "/flow_x";
             string flow_y_dataset = "/" + curr_line + "/flow_y";
             hdf5_save_nd_dataset(frame_id, flow_x_dataset, flow_x);
             hdf5_save_nd_dataset(frame_id, flow_y_dataset, flow_y);
             status = H5Gclose(frame_id);
+            std::clock_t afterh5 = std::clock();
+            t_h5 += double(afterh5 - beforeh5) / CLOCKS_PER_SEC;
 
             // // save as images
             // std::vector<uchar> str_x, str_y, str_img;
@@ -141,6 +160,8 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             // names.push_back(curr_line);
 
             if (cnt % save_duration == 0) {
+                std::clock_t beforewrite = std::clock();
+
                 // 关闭文件对象
                 status = H5Fclose(file_id);
                 if (status < 0) {
@@ -154,9 +175,17 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 // output_y.clear();
                 // output_img.clear();
                 // names.clear();
+                std::clock_t afterwrite = std::clock();
+                t_writeh5 += double(afterh5 - beforeh5) / CLOCKS_PER_SEC;
+
                 std::cout << "Processed " << cnt << " frames." << std::endl;
+                std::cout << "upload:" << t_upload / cnt << ", flow:" << t_flow / cnt
+                          << ", splitflow:" << t_splitflow / cnt << ", h5:" << t_h5 / cnt
+                          << ", writeh5:" << t_writeh5 / cnt << ", fetch:" << t_fetch / cnt << ", swp:" << t_swp / cnt
+                          << std::endl;
             }
 
+            std::clock_t beforefetch = std::clock();
             // prefetch while gpu is working
             bool hasnext = (bool)getline(ifs, curr_line);
             if (hasnext) {
@@ -176,9 +205,13 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 std::cout << "Processed " << cnt << " frames." << std::endl;
                 return;
             }
+            std::clock_t afterfetch = std::clock();
+            t_fetch += double(afterfetch - beforefetch) / CLOCKS_PER_SEC;
 
             std::swap(prev_gray, capture_gray);
             std::swap(prev_image, capture_image);
+            std::clock_t swap = std::clock();
+            t_swp += double(afterfetch - beforefetch) / CLOCKS_PER_SEC;
         }
     }
 }
