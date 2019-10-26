@@ -45,11 +45,13 @@ def run_optical_flow(vid_item, dev_id=0):
     flow_x_path = '{}/flow_x'.format(out_full_path)
     flow_y_path = '{}/flow_y'.format(out_full_path)
 
-    cmd = './build/extract_gpu -f={} -x={} -y={} -i={} -b=20 -t=1 -d={} -s=1 -o=zip'.format(vid_path, flow_x_path, flow_y_path, image_path, dev_id)
+    cmd = './build/extract_gpu -f={} -x={} -y={} -i={} -b=20 -t=1 -d={} -s=1 -o=zip'.format(
+        vid_path, flow_x_path, flow_y_path, image_path, dev_id)
 
     os.system(cmd)
     print '{} {} done'.format(vid_id, vid_name)
     return True
+
 
 def run_warp_optical_flow(vid_item, dev_id=0):
     vid_path = vid_item[0]
@@ -66,7 +68,8 @@ def run_warp_optical_flow(vid_item, dev_id=0):
     flow_x_path = '{}/flow_x'.format(out_full_path)
     flow_y_path = '{}/flow_y'.format(out_full_path)
 
-    cmd = './build/extract_warp_gpu -f {} -x {} -y {} -b 20 -t 1 -d {} -s 1 -o zip'.format(vid_path, flow_x_path, flow_y_path, dev_id)
+    cmd = './build/extract_warp_gpu -f {} -x {} -y {} -b 20 -t 1 -d {} -s 1 -o zip'.format(
+        vid_path, flow_x_path, flow_y_path, dev_id)
 
     os.system(cmd)
     print 'warp on {} {} done'.format(vid_id, vid_name)
@@ -87,8 +90,7 @@ if __name__ == '__main__':
     num_worker = args.num_worker
     flow_type = args.flow_type
 
-
-    vid_list = glob.glob(src_path+'/*.mp4')
+    vid_list = glob.glob(src_path + '/*.mp4')
     print len(vid_list)
     pool = Pool(num_worker)
     if flow_type == 'tvl1':
