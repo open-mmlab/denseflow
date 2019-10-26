@@ -43,7 +43,7 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
     vector<string> names;
     hid_t file_id, frame_id; // hdf5
     herr_t status;
-    const int save_duration = 50;
+    const int save_duration = 512;
     vector<string> vid_splits;
     SplitString(root_dir, vid_splits, "/");
     string vid_name = vid_splits[vid_splits.size() - 1];
@@ -131,14 +131,14 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             hdf5_save_nd_dataset(frame_id, flow_y_dataset, flow_y);
             status = H5Gclose(frame_id);
 
-            // save as images
-            std::vector<uchar> str_x, str_y, str_img;
-            encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
-            imencode(".jpg", capture_image, str_img);
-            output_x.push_back(str_x);
-            output_y.push_back(str_y);
-            output_img.push_back(str_img);
-            names.push_back(curr_line);
+            // // save as images
+            // std::vector<uchar> str_x, str_y, str_img;
+            // encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
+            // imencode(".jpg", capture_image, str_img);
+            // output_x.push_back(str_x);
+            // output_y.push_back(str_y);
+            // output_img.push_back(str_img);
+            // names.push_back(curr_line);
 
             if (cnt % save_duration == 0) {
                 // 关闭文件对象
@@ -149,12 +149,12 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 // 重新打开文件对象
                 file_id = H5Fopen((hdf5_savepath).c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
                 // 保存图片
-                writeImagesV2(output_img, output_x, output_y, names, output_root_dir);
-                output_x.clear();
-                output_y.clear();
-                output_img.clear();
-                names.clear();
-                std::cout << "Saving " << cnt << " images." << std::endl;
+                // writeImagesV2(output_img, output_x, output_y, names, output_root_dir);
+                // output_x.clear();
+                // output_y.clear();
+                // output_img.clear();
+                // names.clear();
+                std::cout << "Processed " << cnt << " frames." << std::endl;
             }
 
             // prefetch while gpu is working
@@ -172,8 +172,8 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                     throw "Failed to save hdf5 file: " + hdf5_savepath;
                 }
                 // 保存图片
-                writeImagesV2(output_img, output_x, output_y, names, output_root_dir);
-                std::cout << "Saving " << cnt << " images." << std::endl;
+                // writeImagesV2(output_img, output_x, output_y, names, output_root_dir);
+                std::cout << "Processed " << cnt << " frames." << std::endl;
                 return;
             }
 
