@@ -10,12 +10,12 @@ int main(int argc, char **argv) {
     const char *keys = {"{ f fileList       | imglist.txt              | filename of imglist }"
                         "{ r rootDir        | /path/to/images/root_dir | root dir of imglist }"
                         "{ or outputRootDir | /path/to/output/root_dir | root dir of output }"
-                        "{ b bound          | 15                       | specify the maximum of optical flow}"
+                        "{ b bound          | 15                       | specify the maximum of optical flow }"
                         "{ t type           | 0                        | specify the optical flow algorithm }"
-                        "{ d device_id      | 0                        | set gpu id}"
-                        "{ o out            | zip                      | output style}"
-                        "{ w newWidth       | 0                        | output style}"
-                        "{ h newHeight      | 0                        | output style}"};
+                        "{ d device_id      | 0                        | set gpu id }"
+                        "{ o out            | zip                      | output style }"
+                        "{ w newWidth       | 0                        | output style }"
+                        "{ h newHeight      | 0                        | output style }"};
 
     CommandLineParser cmd(argc, argv, keys);
     std::string fileList = cmd.get<std::string>("fileList");

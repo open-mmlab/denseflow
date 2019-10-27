@@ -100,8 +100,8 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 break;
             }
             case 1: {
-                // if (cnt > 1)
-                //     alg_tvl1->setUseInitialFlow(true);
+                // if (cnt > 0)
+                // alg_tvl1->setUseInitialFlow(true);
                 alg_tvl1->calc(d_frame_0, d_frame_1, d_flow);
                 break;
             }
@@ -176,7 +176,7 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 // output_img.clear();
                 // names.clear();
                 std::clock_t afterwrite = std::clock();
-                t_writeh5 += double(afterh5 - beforeh5) / CLOCKS_PER_SEC;
+                t_writeh5 += double(afterwrite - beforewrite) / CLOCKS_PER_SEC;
 
                 std::cout << "Processed " << cnt << " frames." << std::endl;
                 std::cout << "upload:" << t_upload / cnt << ", flow:" << t_flow / cnt
