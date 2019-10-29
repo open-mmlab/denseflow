@@ -64,7 +64,7 @@ void writeImagesV2(std::vector<std::vector<uchar>> images, std::vector<std::vect
         // xx.jpg as default image formate
         // std::cout << output_root_dir+"/flow_i_"+names[i]<< std::endl;
         FILE *fp_img, *fp_x, *fp_y;
-        fp_img = fopen((output_root_dir + "/flow_i_" + names[i]).c_str(), "wb");
+        fp_img = fopen((output_root_dir + "/img_" + names[i]).c_str(), "wb");
         fp_x = fopen((output_root_dir + "/flow_x_" + names[i]).c_str(), "wb");
         fp_y = fopen((output_root_dir + "/flow_y_" + names[i]).c_str(), "wb");
         fwrite(images[i].data(), 1, images[i].size(), fp_img);

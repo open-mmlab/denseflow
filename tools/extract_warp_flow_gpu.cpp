@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
     const char *keys = {"{ f vidFile   | ex2.avi | filename of video }"
                         "{ x xFlowFile | flow_x  | filename of flow x component }"
                         "{ y yFlowFile | flow_y  | filename of flow y component }"
-                        "{ b bound     | 15      | specify the maximum of optical flow }"
+                        "{ b bound     | 20      | specify the maximum of optical flow }"
                         "{ t type      | 0       | specify the optical flow algorithm }"
                         "{ d device_id | 0       | set gpu id }"
                         "{ s step      | 1       | specify the step for frame sampling }"
