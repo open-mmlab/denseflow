@@ -3,6 +3,7 @@
 //
 
 #include "common.h"
+#include <chrono>
 
 void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &img_y, double lowerBound,
                         double higherBound) {
@@ -73,4 +74,10 @@ void writeImagesV2(std::vector<std::vector<uchar>> images, std::vector<std::vect
         fclose(fp_x);
         fclose(fp_y);
     }
+}
+
+double CurrentSeconds() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+               .count() /
+           1000.0;
 }

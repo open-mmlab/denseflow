@@ -22,6 +22,10 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
         return;
     }
 
+    bool save_h5 = false;
+    bool save_img = true;
+    bool save_flow = true;
+
     setDevice(dev_id);
     Mat capture_frame, capture_image, prev_image, capture_gray, prev_gray;
     Mat flow_x, flow_y;
@@ -49,7 +53,9 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
     SplitString(root_dir, vid_splits, "/");
     string vid_name = vid_splits[vid_splits.size() - 1];
     string hdf5_savepath = output_root_dir + "/" + vid_name + ".h5";
-    file_id = H5Fcreate(hdf5_savepath.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    if (save_h5) {
+        file_id = H5Fcreate(hdf5_savepath.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    }
     double t_upload = 0;
     double t_flow = 0;
     double t_splitflow = 0;
@@ -63,7 +69,6 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
         // build mats for the first frame
         if (!initialized) {
             getline(ifs, curr_line);
-            // std::cout << root_dir + "/" + curr_line << std::endl;
             capture_frame = cv::imread(root_dir + "/" + curr_line, IMREAD_COLOR); // video_stream >> capture_frame;
             if (capture_frame.empty())
                 return; // read frames until end
@@ -79,20 +84,21 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 cv::resize(capture_frame, prev_image, new_size);
             }
             cvtColor(prev_image, prev_gray, cv::COLOR_BGR2GRAY);
+            d_frame_1.upload(prev_gray);
             initialized = true;
             cnt++;
         } else {
-            std::clock_t begin = std::clock();
+            double begin = CurrentSeconds();
             if (!do_resize)
                 capture_frame.copyTo(capture_image);
             else
                 cv::resize(capture_frame, capture_image, new_size);
 
             cvtColor(capture_image, capture_gray, cv::COLOR_BGR2GRAY);
-            d_frame_0.upload(prev_gray);
-            d_frame_1.upload(capture_gray);
-            std::clock_t upload = std::clock();
-            t_upload += double(upload - begin) / CLOCKS_PER_SEC;
+            d_frame_0.upload(capture_gray);
+            cv::cuda::swap(d_frame_0, d_frame_1);
+            double upload = CurrentSeconds();
+            t_upload += upload - begin;
 
             switch (type) {
             case 0: {
@@ -100,8 +106,6 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                 break;
             }
             case 1: {
-                // if (cnt > 0)
-                // alg_tvl1->setUseInitialFlow(true);
                 alg_tvl1->calc(d_frame_0, d_frame_1, d_flow);
                 break;
             }
@@ -115,8 +119,8 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             default:
                 LOG(ERROR) << "Unknown optical method: " << type;
             }
-            std::clock_t tvl1 = std::clock();
-            t_flow += double(tvl1 - upload) / CLOCKS_PER_SEC;
+            double tvl1 = CurrentSeconds();
+            t_flow += tvl1 - upload;
 
             GpuMat planes[2];
             cuda::split(d_flow, planes);
@@ -125,58 +129,53 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
             Mat flow_x(planes[0]);
             Mat flow_y(planes[1]);
 
-            /* for correction debug
-                        if (cnt == 60) {
-                            float* flow_ptr = flow_y.ptr<float>();
-                            for (int i=0; i<5; i++) {
-                                for (int j=10; j<15; j++) {
-                                    std::cout << flow_ptr[i*flow_y.cols+j] << ", ";
-                                }
-                                std::cout << std::endl;
-                            }
-                        }
-            */
             // save as .h5
-            // std::cout << "file_id " << file_id << ", curr_line " << curr_line << (", /" + curr_line).c_str()
-            //           << std::endl;
-            std::clock_t beforeh5 = std::clock();
-            t_splitflow += double(beforeh5 - tvl1) / CLOCKS_PER_SEC;
-            frame_id = H5Gcreate(file_id, ("/" + curr_line).c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-            string flow_x_dataset = "/" + curr_line + "/flow_x";
-            string flow_y_dataset = "/" + curr_line + "/flow_y";
-            hdf5_save_nd_dataset(frame_id, flow_x_dataset, flow_x);
-            hdf5_save_nd_dataset(frame_id, flow_y_dataset, flow_y);
-            status = H5Gclose(frame_id);
-            std::clock_t afterh5 = std::clock();
-            t_h5 += double(afterh5 - beforeh5) / CLOCKS_PER_SEC;
+            double beforeh5 = CurrentSeconds();
+            t_splitflow += beforeh5 - tvl1;
+            if (save_h5) {
+                frame_id = H5Gcreate(file_id, ("/" + curr_line).c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+                string flow_x_dataset = "/" + curr_line + "/flow_x";
+                string flow_y_dataset = "/" + curr_line + "/flow_y";
+                hdf5_save_nd_dataset(frame_id, flow_x_dataset, flow_x);
+                hdf5_save_nd_dataset(frame_id, flow_y_dataset, flow_y);
+                status = H5Gclose(frame_id);
+            }
+            double afterh5 = CurrentSeconds();
+            t_h5 += afterh5 - beforeh5;
 
-            // // save as images
-            // std::vector<uchar> str_x, str_y, str_img;
-            // encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
-            // imencode(".jpg", capture_image, str_img);
-            // output_x.push_back(str_x);
-            // output_y.push_back(str_y);
-            // output_img.push_back(str_img);
-            // names.push_back(curr_line);
+            if (save_img) {
+                // save as images
+                std::vector<uchar> str_x, str_y, str_img;
+                encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
+                imencode(".jpg", capture_image, str_img);
+                output_x.push_back(str_x);
+                output_y.push_back(str_y);
+                output_img.push_back(str_img);
+                names.push_back(curr_line);
+            }
 
             if (cnt % save_duration == 0) {
-                std::clock_t beforewrite = std::clock();
+                double beforewrite = CurrentSeconds();
 
-                // 关闭文件对象
-                status = H5Fclose(file_id);
-                if (status < 0) {
-                    throw "Failed to save hdf5 file: " + hdf5_savepath;
+                if (save_h5) {
+                    // 关闭文件对象
+                    status = H5Fclose(file_id);
+                    if (status < 0) {
+                        throw "Failed to save hdf5 file: " + hdf5_savepath;
+                    }
+                    // 重新打开文件对象
+                    file_id = H5Fopen((hdf5_savepath).c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
                 }
-                // 重新打开文件对象
-                file_id = H5Fopen((hdf5_savepath).c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
-                // 保存图片
-                // writeImagesV2(output_img, output_x, output_y, names, output_root_dir);
-                // output_x.clear();
-                // output_y.clear();
-                // output_img.clear();
-                // names.clear();
-                std::clock_t afterwrite = std::clock();
-                t_writeh5 += double(afterwrite - beforewrite) / CLOCKS_PER_SEC;
+                if (save_img) {
+                    // 保存图片
+                    writeImagesV2(output_img, output_x, output_y, names, output_root_dir);
+                    output_x.clear();
+                    output_y.clear();
+                    output_img.clear();
+                    names.clear();
+                }
+                double afterwrite = CurrentSeconds();
+                t_writeh5 += afterwrite - beforewrite;
 
                 std::cout << "Processed " << cnt << " frames." << std::endl;
                 std::cout << "upload:" << t_upload / cnt << ", flow:" << t_flow / cnt
@@ -185,33 +184,35 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                           << std::endl;
             }
 
-            std::clock_t beforefetch = std::clock();
+            double beforefetch = CurrentSeconds();
             // prefetch while gpu is working
             bool hasnext = (bool)getline(ifs, curr_line);
             if (hasnext) {
-                // std::cout << root_dir+"/"+curr_line << std::endl;
                 capture_frame = cv::imread(root_dir + "/" + curr_line, IMREAD_COLOR); // video_stream >> capture_frame;
                 cnt++;
             }
 
             if (!hasnext) {
                 // 关闭文件对象
-                status = H5Fclose(file_id);
+                if (save_h5) {
+                    status = H5Fclose(file_id);
+                }
                 if (status < 0) {
                     throw "Failed to save hdf5 file: " + hdf5_savepath;
                 }
                 // 保存图片
-                // writeImagesV2(output_img, output_x, output_y, names, output_root_dir);
+                if (save_img) {
+                    writeImagesV2(output_img, output_x, output_y, names, output_root_dir);
+                }
                 std::cout << "Processed " << cnt << " frames." << std::endl;
+                std::cout << "upload:" << t_upload / cnt << ", flow:" << t_flow / cnt
+                          << ", splitflow:" << t_splitflow / cnt << ", h5:" << t_h5 / cnt
+                          << ", writeh5:" << t_writeh5 / cnt << ", fetch:" << t_fetch / cnt << ", swp:" << t_swp / cnt
+                          << std::endl;
                 return;
             }
-            std::clock_t afterfetch = std::clock();
-            t_fetch += double(afterfetch - beforefetch) / CLOCKS_PER_SEC;
-
-            std::swap(prev_gray, capture_gray);
-            std::swap(prev_image, capture_image);
-            std::clock_t swap = std::clock();
-            t_swp += double(afterfetch - beforefetch) / CLOCKS_PER_SEC;
+            double afterfetch = CurrentSeconds();
+            t_fetch += afterfetch - beforefetch;
         }
     }
 }
