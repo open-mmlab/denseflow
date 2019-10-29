@@ -30,7 +30,7 @@ inline void initializeMats(const Mat &frame, Mat &capture_image, Mat &capture_gr
     prev_gray.create(frame.size(), CV_8UC1);
 }
 
-void writeImages(std::vector<std::vector<uchar>> images, std::string name_temp, const int base = 0);
+void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix, const int base = 0);
 void writeImagesV2(std::vector<std::vector<uchar>> images, std::vector<std::vector<uchar>> flow_x,
                    std::vector<std::vector<uchar>> flow_y, std::vector<std::string> names,
                    const string &output_root_dir);

@@ -15,16 +15,12 @@
 using namespace cv::cuda;
 
 void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_root_dir, int bound, int type, int dev_id,
-                            int new_width, int new_height) {
+                            int new_width, int new_height, bool save_img, bool save_jpg, bool save_h5, bool save_zip) {
     std::ifstream ifs(file_name);
     if (!ifs) {
         std::cout << "Cannot open file_name \"" << file_name << "\" for optical flow extraction.";
         return;
     }
-
-    bool save_h5 = false;
-    bool save_img = true;
-    bool save_flow = true;
 
     setDevice(dev_id);
     Mat capture_frame, capture_image, prev_image, capture_gray, prev_gray;
@@ -173,6 +169,12 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                     output_y.clear();
                     output_img.clear();
                     names.clear();
+                }
+                if (save_zip) {
+                    LOG(ERROR) << "Zip not implemented";
+                    // writeZipFile(output_x, "x_%05d.jpg", xFlowFile + ".zip");
+                    // writeZipFile(output_y, "y_%05d.jpg", yFlowFile + ".zip");
+                    // writeZipFile(output_img, "img_%05d.jpg", imgFile + ".zip");
                 }
                 double afterwrite = CurrentSeconds();
                 t_writeh5 += afterwrite - beforewrite;
