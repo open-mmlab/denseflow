@@ -78,7 +78,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
 
     // optflow
     double before_flow = CurrentSeconds();
-    size_t P = 8;
+    size_t P = 64;
     vector<cv::Ptr<cv::cuda::Stream>> streams(P);
     vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> algs(P);
     vector<GpuMat> flows(M);
