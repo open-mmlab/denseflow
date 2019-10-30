@@ -75,7 +75,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
 
     // optflow
     double before_flow = CurrentSeconds();
-    size_t P = 8;
+    size_t P = 64;
     clue::thread_pool tpool(P);
     vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> algs(P);
     vector<GpuMat> flows(M);
@@ -95,28 +95,28 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     double end_flow = CurrentSeconds();
     std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
 
-    // // download
-    // vector<vector<uchar>> output_x, output_y;
-    // double before_download = CurrentSeconds();
-    // for (int i = 0; i < M; ++i) {
-    //     GpuMat planes[2];
-    //     cuda::split(flows[i], planes);
+    // download
+    vector<vector<uchar>> output_x, output_y;
+    double before_download = CurrentSeconds();
+    for (int i = 0; i < M; ++i) {
+        GpuMat planes[2];
+        cuda::split(flows[i], planes);
 
-    //     // get back flow map
-    //     Mat flow_x(planes[0]);
-    //     Mat flow_y(planes[1]);
+        // get back flow map
+        Mat flow_x(planes[0]);
+        Mat flow_y(planes[1]);
 
-    //     std::vector<uchar> str_x, str_y;
-    //     encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
-    //     output_x.push_back(str_x);
-    //     output_y.push_back(str_y);
-    // }
-    // double end_download = CurrentSeconds();
-    // std::cout << M << " flows downloaded to cpu, using " << (end_download - before_download) << "s" << std::endl;
+        std::vector<uchar> str_x, str_y;
+        encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
+        output_x.push_back(str_x);
+        output_y.push_back(str_y);
+    }
+    double end_download = CurrentSeconds();
+    std::cout << M << " flows downloaded to cpu, using " << (end_download - before_download) << "s" << std::endl;
 
-    // double before_write = CurrentSeconds();
-    // writeImages(output_x, output_root_dir + "/flow_x");
-    // writeImages(output_y, output_root_dir + "/flow_y");
-    // double end_write = CurrentSeconds();
-    // std::cout << M << " flows wrote to disk, using " << (end_write - before_write) << "s" << std::endl;
+    double before_write = CurrentSeconds();
+    writeImages(output_x, output_root_dir + "/flow_x");
+    writeImages(output_y, output_root_dir + "/flow_y");
+    double end_write = CurrentSeconds();
+    std::cout << M << " flows wrote to disk, using " << (end_write - before_write) << "s" << std::endl;
 }
