@@ -10,11 +10,16 @@
 
 void calcDenseFlow(string file_name, int bound, int type, int step, vector<vector<uchar>> &output_x,
                    vector<vector<uchar>> &output_y, vector<vector<uchar>> &output_img);
+
 void calcDenseFlowGPU(string file_name, int bound, int type, int step, int dev_id, vector<vector<uchar>> &output_x,
                       vector<vector<uchar>> &output_y, vector<vector<uchar>> &output_img, int new_width = 0,
                       int new_height = 0);
 
 void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_root_dir, int bound, int type, int dev_id,
+                            int new_width = 0, int new_height = 0, bool save_img = false, bool save_jpg = true,
+                            bool save_h5 = false, bool save_zip = false);
+
+void calcDenseFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
                             int new_width = 0, int new_height = 0, bool save_img = false, bool save_jpg = true,
                             bool save_h5 = false, bool save_zip = false);
 
