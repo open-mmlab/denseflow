@@ -24,7 +24,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     double t_writeh5 = 0;
     double t_fetch = 0;
     double t_swp = 0;
-    // cv::Mat::setDefaultAllocator(cv::cuda::HostMem::getAllocator(cv::cuda::HostMem::AllocType::PAGE_LOCKED));
+    cv::Mat::setDefaultAllocator(cv::cuda::HostMem::getAllocator(cv::cuda::HostMem::AllocType::PAGE_LOCKED));
 
     // read all pairs
     std::ifstream ifs(file_name);
@@ -71,7 +71,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     // upload all frames into gpu
     double before_upload = CurrentSeconds();
     setDevice(dev_id);
-    size_t P = 1;
+    size_t P = 4;
     vector<cv::cuda::Stream> streams(P);
     vector<GpuMat> frames_gray(N);
     for (int i = 0; i < N; ++i) {
@@ -102,6 +102,16 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     }
     double end_flow = CurrentSeconds();
     std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
+
+    // download
+
+        // GpuMat planes[2];
+        // cuda::split(d_flow, planes);
+
+        // // get back flow map
+        // Mat flow_x(planes[0]);
+        // Mat flow_y(planes[1]);
+        // capture_image.download(img);
 
     // // Size new_size(new_width, new_height);
     // // bool do_resize = (new_height > 0) && (new_width > 0);
