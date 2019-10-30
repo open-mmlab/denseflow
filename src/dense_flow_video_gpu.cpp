@@ -15,12 +15,6 @@
 #include <vector>
 using namespace cv::cuda;
 
-// void proc(vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> &algs, vector<GpuMat> &frames_gray, size_t idA, size_t idB,
-//           vector<GpuMat> &flows, vector<cv::Ptr<cv::cuda::Stream>> &streams, size_t i, size_t s, int idx) {
-
-//     algs[i]->calc(frames_gray[idA], frames_gray[idB], flows[i], *(streams[s]));
-// }
-
 void calcDenseFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
                            int new_width, int new_height, bool save_img, bool save_jpg, bool save_h5, bool save_zip) {
     // pin mem
@@ -85,26 +79,19 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     // optflow
     double before_flow = CurrentSeconds();
     size_t P = 8;
-    vector<cv::Ptr<cv::cuda::Stream>> streams(P);
     vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> algs(P);
     vector<GpuMat> flows(M);
     clue::thread_pool tpool(P);
     for (size_t i = 0; i < M; ++i) {
-        tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, &streams, i](size_t tidx) {
+        tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, i](size_t tidx) {
             if (!algs[tidx]) {
                 algs[tidx] = cuda::OpticalFlowDual_TVL1::create();
-                std::cout << "hehe" << tidx << std::endl;
             }
-            if (!streams[tidx]) {
-                streams[tidx] = new cv::cuda::Stream();
-                std::cout << "pepe" << tidx << !(streams[tidx]) << std::endl;
-            }
-            std::cout << "keke" << tidx << std::endl;
-            algs[tidx]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], *(streams[tidx]));
-            streams[tidx]->waitForCompletion();
+            cv::cuda::Stream stream1;
+            algs[tidx]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], stream1);
+            // stream1.waitForCompletion();
         });
     }
-    std::cout << "mmm" << std::endl;
     tpool.wait_done();
     double end_flow = CurrentSeconds();
     std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
