@@ -43,13 +43,14 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
         idBs.push_back(std::stoi(line.substr(delimpos + 1, line.length())));
     }
     ifs.close();
-    std::cout << idAs.size() << " flows of " << video << " to compute." << std::endl;
+    size_t M = idAs.size();
+    std::cout << M << " flows of " << video << " to compute." << std::endl;
 
     // read all frames into cpu
     double before_read = CurrentSeconds();
     VideoCapture video_stream(video);
     CHECK(video_stream.isOpened()) << "Cannot open video stream " << video;
-    int width =  video_stream.get(cv::CAP_PROP_FRAME_WIDTH);
+    int width = video_stream.get(cv::CAP_PROP_FRAME_WIDTH);
     int height = video_stream.get(cv::CAP_PROP_FRAME_HEIGHT);
     Size size(width, height);
     vector<Mat> frames_gray_cpu;
@@ -70,20 +71,37 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     // upload all frames into gpu
     double before_upload = CurrentSeconds();
     setDevice(dev_id);
-    size_t P = 64;
+    size_t P = 1;
     vector<cv::cuda::Stream> streams(P);
-    vector<GpuMat> frames_gray(N), flows_x(N), flows_y(N);
+    vector<GpuMat> frames_gray(N);
     for (int i = 0; i < N; ++i) {
         frames_gray[i].upload(frames_gray_cpu[i], streams[i % P]);
     }
-    for (int i = 0; i < N; ++i) {
-        streams[i % P].waitForCompletion();
-    }
     double end_upload = CurrentSeconds();
     std::cout << N << " frames uploaded into gpu, using " << (end_upload - before_upload) << "s" << std::endl;
-    //     // GpuMat frame_gray;
-    //     // frame_gray.upload(frame_gray_cpu);
-    //     // frames_gray.push_back(frame_gray);
+
+    // optflow
+    double before_flow = CurrentSeconds();
+    cv::Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
+    vector<GpuMat> flows(M);
+    for (int i = 0; i < M; ++i) {
+        switch (type) {
+        case 0: {
+            LOG(ERROR) << "not implemented: " << type;
+        }
+        case 1: {
+            alg_tvl1->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], streams[i % P]);
+            break;
+        }
+        case 2: {
+            LOG(ERROR) << "not implemented: " << type;
+        }
+        default:
+            LOG(ERROR) << "Unknown optical method: " << type;
+        }
+    }
+    double end_flow = CurrentSeconds();
+    std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
 
     // // Size new_size(new_width, new_height);
     // // bool do_resize = (new_height > 0) && (new_width > 0);
