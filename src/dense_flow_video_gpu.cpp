@@ -17,8 +17,6 @@ using namespace cv::cuda;
 
 void calcDenseFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
                            int new_width, int new_height, bool save_img, bool save_jpg, bool save_h5, bool save_zip) {
-    // pin mem
-    cv::Mat::setDefaultAllocator(cv::cuda::HostMem::getAllocator(cv::cuda::HostMem::AllocType::PAGE_LOCKED));
     if (type != 1) {
         LOG(ERROR) << "not implemented: " << type;
     }
@@ -67,22 +65,29 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
 
     // upload all frames into gpu
     double before_upload = CurrentSeconds();
+    size_t P = 64;
+    clue::thread_pool tpool0(P);
+    vector<cv::Ptr<cv::cuda::Stream>> streams0(P);
     setDevice(dev_id);
     vector<GpuMat> frames_gray(N);
     for (int i = 0; i < N; ++i) {
-        frames_gray[i].upload(frames_gray_cpu[i]);
+        tpool0.schedule([&frames_gray, &frames_gray_cpu, &streams0, i](size_t tidx) {
+            if (!streams0[tidx]) {
+                streams0[tidx] = new cv::cuda::Stream();
+            }
+            frames_gray[i].upload(frames_gray_cpu[i], *(streams0[tidx]));
+        });
     }
-
+    tpool0.wait_done();
     double end_upload = CurrentSeconds();
     std::cout << N << " frames uploaded into gpu, using " << (end_upload - before_upload) << "s" << std::endl;
 
     // optflow
     double before_flow = CurrentSeconds();
-    size_t P = 64;
-    vector<cv::Ptr<cv::cuda::Stream>> streams(P);
     vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> algs(P);
     vector<GpuMat> flows(M);
     clue::thread_pool tpool(P);
+    vector<cv::Ptr<cv::cuda::Stream>> streams(P);
     for (size_t i = 0; i < M; ++i) {
         tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, &streams, i](size_t tidx) {
             if (!algs[tidx]) {
