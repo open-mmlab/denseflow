@@ -53,14 +53,12 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     int height = video_stream.get(cv::CAP_PROP_FRAME_HEIGHT);
     Size size(width, height);
     vector<Mat> frames_gray_cpu;
-    // vector<cv::cuda::HostMem> frames_gray_cpu;
     Mat capture_frame_cpu;
     Mat frame_gray_cpu;
     while (true) {
         video_stream >> capture_frame_cpu;
         if (capture_frame_cpu.empty())
             break;
-        // cv::cuda::HostMem frame_gray_cpu(size, CV_8UC1, cv::cuda::HostMem::PAGE_LOCKED);
         cvtColor(capture_frame_cpu, frame_gray_cpu, COLOR_BGR2GRAY);
         frames_gray_cpu.push_back(frame_gray_cpu);
     }
