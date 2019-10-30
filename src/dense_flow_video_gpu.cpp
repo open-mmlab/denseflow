@@ -15,18 +15,11 @@
 #include <vector>
 using namespace cv::cuda;
 
-void proc(vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> &algs, vector<GpuMat> &frames_gray, size_t idA, size_t idB,
-          vector<GpuMat> &flows, vector<cv::Ptr<cv::cuda::Stream>> &streams, size_t i, size_t s, int idx) {
-    if (!algs[i]) {
-        algs[i] = cuda::OpticalFlowDual_TVL1::create();
-        std::cout << "hehe" << idx << std::endl;
-    }
-    if (!streams[s]) {
-        streams[s] = new cv::cuda::Stream();
-        std::cout << "pepe" << idx << std::endl;
-    }
-    algs[i]->calc(frames_gray[idA], frames_gray[idB], flows[i], *(streams[s]));
-}
+// void proc(vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> &algs, vector<GpuMat> &frames_gray, size_t idA, size_t idB,
+//           vector<GpuMat> &flows, vector<cv::Ptr<cv::cuda::Stream>> &streams, size_t i, size_t s, int idx) {
+
+//     algs[i]->calc(frames_gray[idA], frames_gray[idB], flows[i], *(streams[s]));
+// }
 
 void calcDenseFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
                            int new_width, int new_height, bool save_img, bool save_jpg, bool save_h5, bool save_zip) {
@@ -90,7 +83,6 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     double before_flow = CurrentSeconds();
     size_t P = 2;
     vector<cv::Ptr<cv::cuda::Stream>> streams(P);
-
     vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> algs(P);
     vector<GpuMat> flows(M);
     clue::thread_pool tpool(P);
@@ -99,39 +91,49 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
             LOG(ERROR) << "not implemented: " << type;
         }
         tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, &streams, i, P](size_t tidx) {
-            proc(algs, frames_gray, idAs[i], idBs[i], flows, streams, i, i % P, tidx);
+            if (!algs[i]) {
+                algs[i] = cuda::OpticalFlowDual_TVL1::create();
+                std::cout << "hehe" << tidx << std::endl;
+            }
+            if (!streams[i % P]) {
+                streams[i % P] = new cv::cuda::Stream();
+                std::cout << "pepe" << tidx << !(streams[i % P]) << std::endl;
+            }
+            std::cout << "keke" << tidx << std::endl;
+            // algs[i]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], *(streams[i % P]));
+            streams[i]->waitForCompletion();
         });
     }
     std::cout << "mmm" << std::endl;
-    for (int i = 0; i < P; ++i) {
-        (*streams[i]).waitForCompletion();
-    }
+    // for (int i = 0; i < P; ++i) {
+    //     streams[i]->waitForCompletion();
+    // }
     tpool.wait_done();
     double end_flow = CurrentSeconds();
     std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
 
-    // download
-    vector<vector<uchar>> output_x, output_y;
-    double before_download = CurrentSeconds();
-    for (int i = 0; i < M; ++i) {
-        GpuMat planes[2];
-        cuda::split(flows[i], planes);
+    // // download
+    // vector<vector<uchar>> output_x, output_y;
+    // double before_download = CurrentSeconds();
+    // for (int i = 0; i < M; ++i) {
+    //     GpuMat planes[2];
+    //     cuda::split(flows[i], planes);
 
-        // get back flow map
-        Mat flow_x(planes[0]);
-        Mat flow_y(planes[1]);
+    //     // get back flow map
+    //     Mat flow_x(planes[0]);
+    //     Mat flow_y(planes[1]);
 
-        std::vector<uchar> str_x, str_y;
-        encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
-        output_x.push_back(str_x);
-        output_y.push_back(str_y);
-    }
-    double end_download = CurrentSeconds();
-    std::cout << M << " flows downloaded to cpu, using " << (end_download - before_download) << "s" << std::endl;
+    //     std::vector<uchar> str_x, str_y;
+    //     encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
+    //     output_x.push_back(str_x);
+    //     output_y.push_back(str_y);
+    // }
+    // double end_download = CurrentSeconds();
+    // std::cout << M << " flows downloaded to cpu, using " << (end_download - before_download) << "s" << std::endl;
 
-    double before_write = CurrentSeconds();
-    writeImages(output_x, output_root_dir + "/flow_x");
-    writeImages(output_y, output_root_dir + "/flow_y");
-    double end_write = CurrentSeconds();
-    std::cout << M << " flows wrote to disk, using " << (end_write - before_write) << "s" << std::endl;
+    // double before_write = CurrentSeconds();
+    // writeImages(output_x, output_root_dir + "/flow_x");
+    // writeImages(output_y, output_root_dir + "/flow_y");
+    // double end_write = CurrentSeconds();
+    // std::cout << M << " flows wrote to disk, using " << (end_write - before_write) << "s" << std::endl;
 }
