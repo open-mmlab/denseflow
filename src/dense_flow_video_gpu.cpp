@@ -104,6 +104,25 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
 
     // download
+    vector<vector<uchar>> output_x, output_y;
+    double before_download = CurrentSeconds();
+    for (int i = 0; i < M; ++i) {
+        GpuMat planes[2];
+        cuda::split(flows[i], planes);
+
+        // get back flow map
+        Mat flow_x(planes[0]);
+        Mat flow_y(planes[1]);
+
+        std::vector<uchar> str_x, str_y;
+        encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
+        output_x.push_back(str_x);
+        output_y.push_back(str_y);
+
+        // frames_gray[i].download(planes[0], streams[i % P]);
+    }
+    double end_download = CurrentSeconds();
+    std::cout << M << " flows downloaded to cpu, using " << (end_download - before_download) << "s" << std::endl;
 
         // GpuMat planes[2];
         // cuda::split(d_flow, planes);
