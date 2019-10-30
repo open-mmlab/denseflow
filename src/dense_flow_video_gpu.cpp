@@ -16,14 +16,7 @@ using namespace cv::cuda;
 
 void calcDenseFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
                            int new_width, int new_height, bool save_img, bool save_jpg, bool save_h5, bool save_zip) {
-    // timers
-    double t_upload = 0;
-    double t_flow = 0;
-    double t_splitflow = 0;
-    double t_h5 = 0;
-    double t_writeh5 = 0;
-    double t_fetch = 0;
-    double t_swp = 0;
+    // pin mem
     cv::Mat::setDefaultAllocator(cv::cuda::HostMem::getAllocator(cv::cuda::HostMem::AllocType::PAGE_LOCKED));
 
     // read all pairs
