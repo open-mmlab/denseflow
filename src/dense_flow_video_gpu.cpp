@@ -8,11 +8,25 @@
 #include "opencv2/cudaoptflow.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include "utils.h"
+#include <clue/thread_pool.hpp>
 #include <ctime>
 #include <fstream>
 #include <string>
 #include <vector>
 using namespace cv::cuda;
+
+void proc(vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> &algs, vector<GpuMat> &frames_gray, size_t idA, size_t idB,
+          vector<GpuMat> &flows, vector<cv::Ptr<cv::cuda::Stream>> &streams, size_t i, size_t s, int idx) {
+    if (!algs[i]) {
+        algs[i] = cuda::OpticalFlowDual_TVL1::create();
+        std::cout << "hehe" << idx << std::endl;
+    }
+    if (!streams[s]) {
+        streams[s] = new cv::cuda::Stream();
+        std::cout << "pepe" << idx << std::endl;
+    }
+    algs[i]->calc(frames_gray[idA], frames_gray[idB], flows[i], *(streams[s]));
+}
 
 void calcDenseFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
                            int new_width, int new_height, bool save_img, bool save_jpg, bool save_h5, bool save_zip) {
@@ -26,7 +40,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
         return;
     }
     string line;
-    vector<uint> idAs, idBs;
+    vector<size_t> idAs, idBs;
     while (getline(ifs, line)) {
         std::size_t delimpos = line.find('\t');
         if (delimpos == string::npos)
@@ -64,38 +78,35 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     // upload all frames into gpu
     double before_upload = CurrentSeconds();
     setDevice(dev_id);
-    size_t P = 16;
-    vector<cv::cuda::Stream> streams(P);
     vector<GpuMat> frames_gray(N);
     for (int i = 0; i < N; ++i) {
-        frames_gray[i].upload(frames_gray_cpu[i], streams[i % P]);
+        frames_gray[i].upload(frames_gray_cpu[i]);
     }
+
     double end_upload = CurrentSeconds();
     std::cout << N << " frames uploaded into gpu, using " << (end_upload - before_upload) << "s" << std::endl;
 
     // optflow
     double before_flow = CurrentSeconds();
-    cv::Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
+    size_t P = 2;
+    vector<cv::Ptr<cv::cuda::Stream>> streams(P);
+
+    vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> algs(P);
     vector<GpuMat> flows(M);
-    for (int i = 0; i < M; ++i) {
-        switch (type) {
-        case 0: {
+    clue::thread_pool tpool(P);
+    for (size_t i = 0; i < M; ++i) {
+        if (type != 1) {
             LOG(ERROR) << "not implemented: " << type;
         }
-        case 1: {
-            alg_tvl1->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], streams[i % P]);
-            break;
-        }
-        case 2: {
-            LOG(ERROR) << "not implemented: " << type;
-        }
-        default:
-            LOG(ERROR) << "Unknown optical method: " << type;
-        }
+        tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, &streams, i, P](size_t tidx) {
+            proc(algs, frames_gray, idAs[i], idBs[i], flows, streams, i, i % P, tidx);
+        });
     }
+    std::cout << "mmm" << std::endl;
     for (int i = 0; i < P; ++i) {
-        streams[i].waitForCompletion();
+        (*streams[i]).waitForCompletion();
     }
+    tpool.wait_done();
     double end_flow = CurrentSeconds();
     std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
 
@@ -114,8 +125,6 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
         encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
         output_x.push_back(str_x);
         output_y.push_back(str_y);
-
-        // frames_gray[i].download(planes[0], streams[i % P]);
     }
     double end_download = CurrentSeconds();
     std::cout << M << " flows downloaded to cpu, using " << (end_download - before_download) << "s" << std::endl;
@@ -125,5 +134,4 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     writeImages(output_y, output_root_dir + "/flow_y");
     double end_write = CurrentSeconds();
     std::cout << M << " flows wrote to disk, using " << (end_write - before_write) << "s" << std::endl;
-
 }
