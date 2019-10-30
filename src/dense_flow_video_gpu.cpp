@@ -24,6 +24,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     double t_writeh5 = 0;
     double t_fetch = 0;
     double t_swp = 0;
+    // cv::Mat::setDefaultAllocator(cv::cuda::HostMem::getAllocator(cv::cuda::HostMem::AllocType::PAGE_LOCKED));
 
     // read all pairs
     std::ifstream ifs(file_name);
@@ -48,17 +49,22 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     double before_read = CurrentSeconds();
     VideoCapture video_stream(video);
     CHECK(video_stream.isOpened()) << "Cannot open video stream " << video;
+    int width =  video_stream.get(cv::CAP_PROP_FRAME_WIDTH);
+    int height = video_stream.get(cv::CAP_PROP_FRAME_HEIGHT);
+    Size size(width, height);
     vector<Mat> frames_gray_cpu;
+    // vector<cv::cuda::HostMem> frames_gray_cpu;
     Mat capture_frame_cpu;
     Mat frame_gray_cpu;
     while (true) {
         video_stream >> capture_frame_cpu;
         if (capture_frame_cpu.empty())
             break;
-        frame_gray_cpu.create(capture_frame_cpu.size(), CV_8UC1);
+        // cv::cuda::HostMem frame_gray_cpu(size, CV_8UC1, cv::cuda::HostMem::PAGE_LOCKED);
         cvtColor(capture_frame_cpu, frame_gray_cpu, COLOR_BGR2GRAY);
         frames_gray_cpu.push_back(frame_gray_cpu);
     }
+    video_stream.release();
     int N = frames_gray_cpu.size();
     double end_read = CurrentSeconds();
     std::cout << N << " frames loaded into cpu, using " << (end_read - before_read) << "s" << std::endl;
@@ -66,11 +72,14 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     // upload all frames into gpu
     double before_upload = CurrentSeconds();
     setDevice(dev_id);
-    size_t P = 16;
+    size_t P = 64;
     vector<cv::cuda::Stream> streams(P);
     vector<GpuMat> frames_gray(N), flows_x(N), flows_y(N);
     for (int i = 0; i < N; ++i) {
-        frames_gray[i].upload(frames_gray_cpu[i]);
+        frames_gray[i].upload(frames_gray_cpu[i], streams[i % P]);
+    }
+    for (int i = 0; i < N; ++i) {
+        streams[i % P].waitForCompletion();
     }
     double end_upload = CurrentSeconds();
     std::cout << N << " frames uploaded into gpu, using " << (end_upload - before_upload) << "s" << std::endl;
