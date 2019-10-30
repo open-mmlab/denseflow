@@ -42,9 +42,10 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
         idBs.push_back(std::stoi(line.substr(delimpos + 1, line.length())));
     }
     ifs.close();
-    std::cout << idAs.size() << " flows to compute." << std::endl;
+    std::cout << idAs.size() << " flows of " << video << " to compute." << std::endl;
 
     // read all frames into cpu
+    double before_read = CurrentSeconds();
     VideoCapture video_stream(video);
     CHECK(video_stream.isOpened()) << "Cannot open video stream " << video;
     vector<Mat> frames_gray_cpu;
@@ -58,13 +59,21 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
         cvtColor(capture_frame_cpu, frame_gray_cpu, COLOR_BGR2GRAY);
         frames_gray_cpu.push_back(frame_gray_cpu);
     }
-    std::cout << frames_gray_cpu.size() << " frames loaded into cpu." << std::endl;
+    int N = frames_gray_cpu.size();
+    double end_read = CurrentSeconds();
+    std::cout << N << " frames loaded into cpu, using " << (end_read - before_read) << "s" << std::endl;
 
-    // // upload all frames into gpu
-    // setDevice(dev_id);
-    // size_t P = 16;
-    // vector<cv::cuda::Stream> streams(P);
-    // vector<GpuMat> frames_gray, flows_x, flows_y;
+    // upload all frames into gpu
+    double before_upload = CurrentSeconds();
+    setDevice(dev_id);
+    size_t P = 16;
+    vector<cv::cuda::Stream> streams(P);
+    vector<GpuMat> frames_gray(N), flows_x(N), flows_y(N);
+    for (int i = 0; i < N; ++i) {
+        frames_gray[i].upload(frames_gray_cpu[i]);
+    }
+    double end_upload = CurrentSeconds();
+    std::cout << N << " frames uploaded into gpu, using " << (end_upload - before_upload) << "s" << std::endl;
     //     // GpuMat frame_gray;
     //     // frame_gray.upload(frame_gray_cpu);
     //     // frames_gray.push_back(frame_gray);
