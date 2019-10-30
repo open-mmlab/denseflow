@@ -55,17 +55,18 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     Size size(width, height);
     vector<Mat> frames_gray_cpu;
     Mat capture_frame_cpu;
-    Mat frame_gray_cpu;
     while (true) {
         video_stream >> capture_frame_cpu;
         if (capture_frame_cpu.empty())
             break;
+        Mat frame_gray_cpu;
         cvtColor(capture_frame_cpu, frame_gray_cpu, COLOR_BGR2GRAY);
         frames_gray_cpu.push_back(frame_gray_cpu);
     }
     video_stream.release();
     int N = frames_gray_cpu.size();
     double end_read = CurrentSeconds();
+    std::cout << N << " frames loaded into cpu, using " << (end_read - before_read) << "s" << std::endl;
 
     // upload all frames into gpu
     double before_upload = CurrentSeconds();
@@ -77,6 +78,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
         frames_gray[i].upload(frames_gray_cpu[i], streams[i % P]);
     }
     double end_upload = CurrentSeconds();
+    std::cout << N << " frames uploaded into gpu, using " << (end_upload - before_upload) << "s" << std::endl;
 
     // optflow
     double before_flow = CurrentSeconds();
@@ -102,6 +104,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
         streams[i].waitForCompletion();
     }
     double end_flow = CurrentSeconds();
+    std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
 
     // download
     vector<vector<uchar>> output_x, output_y;
@@ -122,16 +125,12 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
         // frames_gray[i].download(planes[0], streams[i % P]);
     }
     double end_download = CurrentSeconds();
+    std::cout << M << " flows downloaded to cpu, using " << (end_download - before_download) << "s" << std::endl;
 
     double before_write = CurrentSeconds();
-    std::cout << output_root_dir + "/flow_x" << std::endl;
     writeImages(output_x, output_root_dir + "/flow_x");
     writeImages(output_y, output_root_dir + "/flow_y");
     double end_write = CurrentSeconds();
-    std::cout << N << " frames loaded into cpu, using " << (end_read - before_read) << "s" << std::endl;
-    std::cout << N << " frames uploaded into gpu, using " << (end_upload - before_upload) << "s" << std::endl;
-    std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
-    std::cout << M << " flows downloaded to cpu, using " << (end_download - before_download) << "s" << std::endl;
     std::cout << M << " flows wrote to disk, using " << (end_write - before_write) << "s" << std::endl;
 
 }
