@@ -90,18 +90,18 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     vector<GpuMat> flows(M);
     clue::thread_pool tpool(P);
     for (size_t i = 0; i < M; ++i) {
-        tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, &streams, i, P](size_t tidx) {
-            if (!algs[i]) {
-                algs[i] = cuda::OpticalFlowDual_TVL1::create();
+        tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, &streams, i](size_t tidx) {
+            if (!algs[tidx]) {
+                algs[tidx] = cuda::OpticalFlowDual_TVL1::create();
                 std::cout << "hehe" << tidx << std::endl;
             }
-            if (!streams[i % P]) {
-                streams[i % P] = new cv::cuda::Stream();
-                std::cout << "pepe" << tidx << !(streams[i % P]) << std::endl;
+            if (!streams[tidx]) {
+                streams[tidx] = new cv::cuda::Stream();
+                std::cout << "pepe" << tidx << !(streams[tidx]) << std::endl;
             }
             std::cout << "keke" << tidx << std::endl;
-            algs[i]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], *(streams[i % P]));
-            streams[i]->waitForCompletion();
+            algs[tidx]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], *(streams[tidx]));
+            streams[tidx]->waitForCompletion();
         });
     }
     std::cout << "mmm" << std::endl;
