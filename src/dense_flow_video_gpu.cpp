@@ -25,6 +25,9 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
                            int new_width, int new_height, bool save_img, bool save_jpg, bool save_h5, bool save_zip) {
     // pin mem
     cv::Mat::setDefaultAllocator(cv::cuda::HostMem::getAllocator(cv::cuda::HostMem::AllocType::PAGE_LOCKED));
+    if (type != 1) {
+        LOG(ERROR) << "not implemented: " << type;
+    }
 
     // read all pairs
     std::ifstream ifs(file_name);
@@ -87,9 +90,6 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     vector<GpuMat> flows(M);
     clue::thread_pool tpool(P);
     for (size_t i = 0; i < M; ++i) {
-        if (type != 1) {
-            LOG(ERROR) << "not implemented: " << type;
-        }
         tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, &streams, i, P](size_t tidx) {
             if (!algs[i]) {
                 algs[i] = cuda::OpticalFlowDual_TVL1::create();
@@ -100,14 +100,11 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
                 std::cout << "pepe" << tidx << !(streams[i % P]) << std::endl;
             }
             std::cout << "keke" << tidx << std::endl;
-            // algs[i]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], *(streams[i % P]));
+            algs[i]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], *(streams[i % P]));
             streams[i]->waitForCompletion();
         });
     }
     std::cout << "mmm" << std::endl;
-    // for (int i = 0; i < P; ++i) {
-    //     streams[i]->waitForCompletion();
-    // }
     tpool.wait_done();
     double end_flow = CurrentSeconds();
     std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
