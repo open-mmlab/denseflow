@@ -79,17 +79,19 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     // optflow
     double before_flow = CurrentSeconds();
     size_t P = 8;
+    vector<cv::Ptr<cv::cuda::Stream>> streams(P);
     vector<cv::Ptr<cuda::OpticalFlowDual_TVL1>> algs(P);
     vector<GpuMat> flows(M);
     clue::thread_pool tpool(P);
     for (size_t i = 0; i < M; ++i) {
-        tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, i](size_t tidx) {
+        tpool.schedule([&algs, &frames_gray, &idAs, &idBs, &flows, &streams, i](size_t tidx) {
             if (!algs[tidx]) {
                 algs[tidx] = cuda::OpticalFlowDual_TVL1::create();
             }
-            cv::cuda::Stream stream1;
-            algs[tidx]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], stream1);
-            // stream1.waitForCompletion();
+            if (!streams[tidx]) {
+                streams[tidx] = new cv::cuda::Stream();
+            }
+            algs[tidx]->calc(frames_gray[idAs[i]], frames_gray[idBs[i]], flows[i], *(streams[tidx]));
         });
     }
     tpool.wait_done();
