@@ -67,16 +67,11 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     double before_upload = CurrentSeconds();
     size_t P = 64;
     clue::thread_pool tpool0(P);
-    vector<cv::Ptr<cv::cuda::Stream>> streams0(P);
     setDevice(dev_id);
     vector<GpuMat> frames_gray(N);
     for (int i = 0; i < N; ++i) {
-        tpool0.schedule([&frames_gray, &frames_gray_cpu, &streams0, i](size_t tidx) {
-            if (!streams0[tidx]) {
-                streams0[tidx] = new cv::cuda::Stream();
-            }
-            frames_gray[i].upload(frames_gray_cpu[i], *(streams0[tidx]));
-        });
+        tpool0.schedule(
+            [&frames_gray, &frames_gray_cpu, i](size_t tidx) { frames_gray[i].upload(frames_gray_cpu[i]); });
     }
     tpool0.wait_done();
     double end_upload = CurrentSeconds();
