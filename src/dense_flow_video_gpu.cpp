@@ -71,7 +71,7 @@ void calcDenseFlowVideoGPU(string file_name, string video, string output_root_di
     // upload all frames into gpu
     double before_upload = CurrentSeconds();
     setDevice(dev_id);
-    size_t P = 4;
+    size_t P = 16;
     vector<cv::cuda::Stream> streams(P);
     vector<GpuMat> frames_gray(N);
     for (int i = 0; i < N; ++i) {
