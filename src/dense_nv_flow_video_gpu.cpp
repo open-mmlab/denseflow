@@ -110,19 +110,45 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
 
     // optflow
     double before_flow = CurrentSeconds();
+
+    Ptr<cuda::FarnebackOpticalFlow> alg_farn = cuda::FarnebackOpticalFlow::create();
+    Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
+    Ptr<cuda::BroxOpticalFlow> alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
+    Ptr<NvidiaOpticalFlow_1_0> alg_nv = NvidiaOpticalFlow_1_0::create(
+        size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, true, false, false,
+        dev_id);
     int M = N - abs(step);
     if (M <= 0)
         return;
-    Ptr<NvidiaOpticalFlow_1_0> nvof = NvidiaOpticalFlow_1_0::create(
-        size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, true, false, false,
-        dev_id);
+
     vector<Mat> flows(M);
     for (size_t i = 0; i < M; ++i) {
         Mat flow;
         int a = step > 0 ? i : i - step;
         int b = step > 0 ? i + step : i;
-        nvof->calc(frames_gray[a], frames_gray[b], flow);
-        nvof->upSampler(flow, size.width, size.height, nvof->getGridSize(), flows[i]);
+
+        if (algorithm == "nv") {
+            alg_nv->calc(frames_gray[a], frames_gray[b], flow);
+            alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
+        } else {
+            GpuMat gray_a_gpu, gray_b_gpu, flow_gpu;
+            gray_a_gpu.upload(frames_gray[a]);
+            gray_b_gpu.upload(frames_gray[b]);
+            if (algorithm == "tvl1") {
+                alg_tvl1->calc(gray_a_gpu, gray_b_gpu, flow_gpu);
+            } else if (algorithm == "farn") {
+                alg_farn->calc(gray_a_gpu, gray_b_gpu, flow_gpu);
+            } else if (algorithm == "brox") {
+                GpuMat d_buf_0, d_buf_1;
+                gray_a_gpu.convertTo(d_buf_0, CV_32F, 1.0 / 255.0);
+                gray_b_gpu.convertTo(d_buf_1, CV_32F, 1.0 / 255.0);
+                alg_brox->calc(d_buf_0, d_buf_1, flow_gpu);
+            } else {
+                LOG(ERROR) << "Unknown optical algorithm " << algorithm;
+                return;
+            }
+            flow_gpu.download(flows[i]);
+        }
     }
     double end_flow = CurrentSeconds();
     if (verbose)
