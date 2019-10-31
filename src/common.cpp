@@ -45,10 +45,28 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, std::vector<uch
     }
 }
 
-void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix, const int base) {
-    for (int i = base; i < images.size() + base; ++i) {
+void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix) {
+    for (int i = 0; i < images.size(); ++i) {
         char tmp[256];
-        sprintf(tmp, "_%05d.jpg", i + 1);
+        sprintf(tmp, "_%05d.jpg", i);
+        FILE *fp;
+        fp = fopen((name_prefix + tmp).c_str(), "wb");
+        fwrite(images[i].data(), 1, images[i].size(), fp);
+        fclose(fp);
+    }
+}
+
+void writeFlowImages(std::vector<std::vector<uchar>> images, std::string name_prefix, const int step) {
+    int base = step > 0 ? 0 : -step;
+    for (int i = 0; i < images.size(); ++i) {
+        char tmp[256];
+        if (step > 1) {
+            sprintf(tmp, "_p%d_%05d.jpg", step, i + base);
+        } else if (step < 0) {
+            sprintf(tmp, "_m%d_%05d.jpg", -step, i + base);
+        } else {
+            sprintf(tmp, "_%05d.jpg", i + base);
+        }
         FILE *fp;
         fp = fopen((name_prefix + tmp).c_str(), "wb");
         fwrite(images[i].data(), 1, images[i].size(), fp);

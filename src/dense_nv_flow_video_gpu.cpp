@@ -150,6 +150,7 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
             flow_gpu.download(flows[i]);
         }
     }
+    alg_nv->collectGarbage();
     double end_flow = CurrentSeconds();
     if (verbose)
         std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
@@ -172,8 +173,8 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
         std::cout << M << " flows encodeed to img, using " << (end_encode - before_encode) << "s" << std::endl;
 
     double before_write = CurrentSeconds();
-    writeImages(output_x, output_dir + "/flow_x");
-    writeImages(output_y, output_dir + "/flow_y");
+    writeFlowImages(output_x, output_dir + "/flow_x", step);
+    writeFlowImages(output_y, output_dir + "/flow_y", step);
     double end_write = CurrentSeconds();
     if (verbose)
         std::cout << M << " flows written to disk, using " << (end_write - before_write) << "s" << std::endl;

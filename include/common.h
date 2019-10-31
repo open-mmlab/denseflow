@@ -46,7 +46,8 @@ inline bool dirExists(const string &path) {
     return stat(path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR);
 }
 
-void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix, const int base = 0);
+void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix);
+void writeFlowImages(std::vector<std::vector<uchar>> images, std::string name_prefix, const int step = 1);
 void writeImagesV2(std::vector<std::vector<uchar>> images, std::vector<std::vector<uchar>> flow_x,
                    std::vector<std::vector<uchar>> flow_y, std::vector<std::string> names,
                    const string &output_root_dir);
