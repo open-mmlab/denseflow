@@ -38,14 +38,14 @@ target_link_libraries( denseflow ${OpenCV_LIBS} ${LIBZIP_LIBRARY} )
 # add_executable( extract_cpu tools/extract_flow.cpp)
 # target_link_libraries( extract_cpu ${OpenCV_LIBS} ${LIBZIP_LIBRARY} denseflow)
 
-# add_executable( extract_gpu tools/extract_flow_gpu.cpp)
-# target_link_libraries( extract_gpu ${OpenCV_LIBS} ${LIBZIP_LIBRARY} denseflow)
+add_executable( extract_flow tools/extract_flow_gpu.cpp)
+target_link_libraries( extract_flow ${OpenCV_LIBS} ${LIBZIP_LIBRARY} denseflow)
 
 # add_executable( extract_frames_gpu tools/extract_flow_frames_gpu.cpp)
 # target_link_libraries( extract_frames_gpu ${OpenCV_LIBS} ${LIBZIP_LIBRARY} denseflow)
 
-add_executable( extract_video_gpu tools/extract_nv_flow_video_gpu.cpp)
-target_link_libraries( extract_video_gpu denseflow)
+add_executable( extract_nvflow tools/extract_nv_flow_video_gpu.cpp)
+target_link_libraries( extract_nvflow ${OpenCV_LIBS} denseflow)
 
 # add_executable( extract_warp_gpu tools/extract_warp_flow_gpu.cpp)
 # target_link_libraries( extract_warp_gpu ${OpenCV_LIBS} ${LIBZIP_LIBRARY} denseflow)
