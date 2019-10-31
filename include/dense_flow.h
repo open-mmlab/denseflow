@@ -20,12 +20,11 @@ void calcDenseFlowFramesGPU(string file_name, string root_dir, string output_roo
                             bool save_h5 = false, bool save_zip = false);
 
 void calcDenseFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
-                            int new_width = 0, int new_height = 0, bool save_img = false, bool save_jpg = true,
-                            bool save_h5 = false, bool save_zip = false);
+                           int new_width = 0, int new_height = 0, bool save_img = false, bool save_jpg = true,
+                           bool save_h5 = false, bool save_zip = false);
 
-void calcDenseNvFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
-                            int new_width = 0, int new_height = 0, bool save_img = false, bool save_jpg = true,
-                            bool save_h5 = false, bool save_zip = false);
+void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algorithm, int step, int bound, int new_width,
+                             int new_height, int new_short, int dev_id, bool verbose);
 
 void calcDenseFlowPureGPU(std::string file_name, int bound, int type, int step, int dev_id,
                           std::vector<std::vector<uchar>> &output_x, std::vector<std::vector<uchar>> &output_y,

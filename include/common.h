@@ -9,8 +9,14 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/video/tracking.hpp"
 
+#include <chrono>
+#include <fstream>
 #include <iostream>
 #include <stdio.h>
+#include <string>
+#include <sys/stat.h>
+#include <unistd.h>
+
 using namespace cv;
 using std::string;
 using std::vector;
@@ -28,6 +34,16 @@ inline void initializeMats(const Mat &frame, Mat &capture_image, Mat &capture_gr
 
     prev_image.create(frame.size(), CV_8UC3);
     prev_gray.create(frame.size(), CV_8UC1);
+}
+
+inline bool fileExists(const string &name) {
+    struct stat info;
+    return stat(name.c_str(), &info) == 0;
+}
+
+inline bool dirExists(const string &path) {
+    struct stat info;
+    return stat(path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR);
 }
 
 void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix, const int base = 0);
