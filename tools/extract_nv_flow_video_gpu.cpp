@@ -7,17 +7,17 @@ using namespace cv::cuda;
 
 int main(int argc, char **argv) {
     try {
-        const char *keys = {"{ v video          | video.mp4        | filename of video }"
-                            "{ o outputDir      | /path/to/outputs | root dir of output }"
-                            "{ a algorithm      | nv               | optical flow algorithm (nv | tvl1 | farn | brox) }"
-                            "{ s step           | 1                | right - left (0 for img, non-0 for flow) }"
-                            "{ b bound          | 32               | maximum of optical flow }"
-                            "{ w newWidth       | 0                | new width }"
-                            "{ h newHeight      | 0                | new height }"
-                            "{ short            | 0                | short side length }"
-                            "{ d deviceId       | 0                | set gpu id }"
-                            "{ verbose          |                  | verbose }"
-                            "{ help             |                  | print help message }"};
+        const char *keys = {"{ v video     | video.mp4        | filename of video }"
+                            "{ o outputDir | /path/to/outputs | root dir of output }"
+                            "{ a algorithm | nv               | optical flow algorithm (nv | tvl1 | farn | brox) }"
+                            "{ s step      | 1                | right - left (0 for img, non-0 for flow) }"
+                            "{ b bound     | 32               | maximum of optical flow }"
+                            "{ w newWidth  | 0                | new width }"
+                            "{ h newHeight | 0                | new height }"
+                            "{ sh short    | 0                | short side length }"
+                            "{ d deviceId  | 0                | set gpu id }"
+                            "{ v verbose   |                  | verbose }"
+                            "{ hh help     |                  | print help message }"};
 
         CommandLineParser cmd(argc, argv, keys);
         string video_path = cmd.get<string>("video");
