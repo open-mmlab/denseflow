@@ -160,7 +160,6 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
     for (int i = 0; i < M; ++i) {
         Mat planes[2];
         split(flows[i], planes);
-        // get back flow map
         Mat flow_x(planes[0]);
         Mat flow_y(planes[1]);
         vector<uchar> str_x, str_y;
