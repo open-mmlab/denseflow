@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
     try {
         const char *keys = {"{ v video     | video.mp4        | filename of video }"
                             "{ o outputDir | /path/to/outputs | root dir of output }"
-                            "{ a algorithm | nv               | optical flow algorithm (nv | tvl1 | farn | brox) }"
+                            "{ a algorithm | nv               | optical flow algorithm (nv/tvl1/farn/brox) }"
                             "{ s step      | 1                | right - left (0 for img, non-0 for flow) }"
                             "{ b bound     | 32               | maximum of optical flow }"
                             "{ w newWidth  | 0                | new width }"
