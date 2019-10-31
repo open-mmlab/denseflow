@@ -45,12 +45,14 @@ void calcDenseNvFlowVideoGPU(string file_name, string video, string output_root_
     int height = video_stream.get(cv::CAP_PROP_FRAME_HEIGHT);
     Size size(width, height);
     vector<Mat> frames;
+    Mat capture_frame;
     while (true) {
-        Mat capture_frame;
         video_stream >> capture_frame;
         if (capture_frame.empty())
             break;
-        frames.push_back(capture_frame);
+        Mat frame_gray;
+        cvtColor(capture_frame, frame_gray, COLOR_BGR2GRAY);
+        frames.push_back(frame_gray);
     }
     video_stream.release();
     int N = frames.size();
@@ -66,7 +68,7 @@ void calcDenseNvFlowVideoGPU(string file_name, string video, string output_root_
     for (size_t i = 0; i < M; ++i) {
         Mat flow;
         nvof->calc(frames[idAs[i]], frames[idBs[i]], flow);
-        nvof->upSampler(flows[i], size.width, size.height, nvof->getGridSize(), flows[i]);
+        nvof->upSampler(flow, size.width, size.height, nvof->getGridSize(), flows[i]);
     }
     double end_flow = CurrentSeconds();
     std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
@@ -95,4 +97,5 @@ void calcDenseNvFlowVideoGPU(string file_name, string video, string output_root_
     writeImages(output_y, output_root_dir + "/flow_y");
     double end_write = CurrentSeconds();
     std::cout << M << " flows wrote to disk, using " << (end_write - before_write) << "s" << std::endl;
+    std::cout << M << " flows finished in " << (end_write - before_read) << "s" << std::endl;
 }
