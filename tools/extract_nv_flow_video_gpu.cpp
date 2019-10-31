@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     if (new_height > 0 || new_width > 0)
         LOG(ERROR) << "resize not implemented yet";
 
-    calcDenseFlowVideoGPU(fileList, video, outputRootDir, bound, type, device_id, new_width, new_height, save_img,
+    calcDenseNvFlowVideoGPU(fileList, video, outputRootDir, bound, type, device_id, new_width, new_height, save_img,
                           save_jpg, save_h5, save_zip);
 
     return 0;

@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
                         "{ y yFlowFile  | flow_y  | filename of flow x component }"
                         "{ i imgFile    | img     | filename of flow image }"
                         "{ b bound      | 20      | specify the maximum of optical flow }"
-                        "{ t type       | 0       | specify the optical flow algorithm }"
+                        "{ t type       | 1       | specify the optical flow algorithm }"
                         "{ d device_id  | 0       | set gpu id }"
                         "{ s step       | 1       | specify the step for frame sampling }"
                         "{ o out        | zip     | output style }"

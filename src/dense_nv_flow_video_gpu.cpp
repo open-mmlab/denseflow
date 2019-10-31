@@ -14,7 +14,7 @@
 #include <vector>
 using namespace cv::cuda;
 
-void calcDenseFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
+void calcDenseNvFlowVideoGPU(string file_name, string video, string output_root_dir, int bound, int type, int dev_id,
                            int new_width, int new_height, bool save_img, bool save_jpg, bool save_h5, bool save_zip) {
     if (type != 1) {
         LOG(ERROR) << "not implemented: " << type;
