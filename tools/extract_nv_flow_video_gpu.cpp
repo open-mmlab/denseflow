@@ -16,8 +16,8 @@ int main(int argc, char **argv) {
                             "{ h newHeight | 0                | new height }"
                             "{ sh short    | 0                | short side length }"
                             "{ d deviceId  | 0                | set gpu id }"
-                            "{ v verbose   |                  | verbose }"
-                            "{ hh help     |                  | print help message }"};
+                            "{ vv verbose  |                  | verbose }"
+                            "{ help        |                  | print help message }"};
 
         CommandLineParser cmd(argc, argv, keys);
         string video_path = cmd.get<string>("video");
