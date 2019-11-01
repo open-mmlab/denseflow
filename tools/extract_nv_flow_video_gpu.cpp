@@ -50,16 +50,20 @@ int main(int argc, char **argv) {
             string text = read_file_content(video_path.c_str());
             line_stream lstr(text);
             for (string_view line : lstr) {
-                path vidfile(trim(line).to_string());
-                path outdir = output_dir / vidfile.stem();
-                create_directories(outdir);
-                calcDenseNvFlowVideoGPU(vidfile, outdir, algorithm, step, bound, new_width, new_height, new_short,
-                                        device_id, verbose);
-                // mark done
-                path donedir = output_dir / ".done";
-                path donefile = donedir / vidfile.stem();
-                create_directories(donedir);
-                createFile(donefile);
+                try {
+                    path vidfile(trim(line).to_string());
+                    path outdir = output_dir / vidfile.stem();
+                    create_directories(outdir);
+                    calcDenseNvFlowVideoGPU(vidfile, outdir, algorithm, step, bound, new_width, new_height, new_short,
+                                            device_id, verbose);
+                    // mark done
+                    path donedir = output_dir / ".done";
+                    path donefile = donedir / vidfile.stem();
+                    create_directories(donedir);
+                    createFile(donefile);
+                } catch (const std::exception &ex) {
+                    std::cout << trim(line) << " errored: " << ex.what() << std::endl;
+                }
             }
         } else {
             calcDenseNvFlowVideoGPU(video_path, output_dir, algorithm, step, bound, new_width, new_height, new_short,

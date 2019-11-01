@@ -80,15 +80,15 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     // extract frames only
     if (step == 0) {
         vector<vector<uchar>> output_img;
-        Mat capture_frame;
+        Mat capture_frame, resized_frame;
+        if (do_resize)
+            resized_frame.create(size, CV_8UC3);
         while (true) {
             vector<uchar> str_img;
             video_stream >> capture_frame;
             if (capture_frame.empty())
                 break;
             if (do_resize) {
-                Mat resized_frame;
-                resized_frame.create(size, CV_8UC3);
                 cv::resize(capture_frame, resized_frame, size);
                 imencode(".jpg", resized_frame, str_img);
             } else {
@@ -96,7 +96,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
             }
             output_img.push_back(str_img);
         }
-        video_stream.release();
         int N = output_img.size();
         double end_read = CurrentSeconds();
         if (verbose)
@@ -142,12 +141,13 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
     Ptr<cuda::BroxOpticalFlow> alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
     Ptr<NvidiaOpticalFlow_1_0> alg_nv = NvidiaOpticalFlow_1_0::create(
-        size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, true, false, false,
-        dev_id);
+        size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, false, false,
+        false, dev_id);
     int M = N - abs(step);
     if (M <= 0)
         return;
     vector<Mat> flows(M);
+    GpuMat gray_a_gpu, gray_b_gpu, flow_gpu;
     for (size_t i = 0; i < M; ++i) {
         Mat flow;
         int a = step > 0 ? i : i - step;
@@ -157,7 +157,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
             alg_nv->calc(frames_gray[a], frames_gray[b], flow);
             alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
         } else {
-            GpuMat gray_a_gpu, gray_b_gpu, flow_gpu;
             gray_a_gpu.upload(frames_gray[a]);
             gray_b_gpu.upload(frames_gray[b]);
             if (algorithm == "tvl1") {
@@ -183,8 +182,8 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     // encode
     double before_encode = CurrentSeconds();
     vector<vector<uchar>> output_x, output_y;
+    Mat planes[2];
     for (int i = 0; i < M; ++i) {
-        Mat planes[2];
         split(flows[i], planes);
         Mat flow_x(planes[0]);
         Mat flow_y(planes[1]);
