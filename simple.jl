@@ -54,13 +54,14 @@ DONES = readdir(DONEDIR)
 ITEMS = [joinpath(SOURCEDIR, "$x.webm") for x in setdiff(Set(ITEMS), Set(DONES))]
 println("$(length(ITEMS)) items to process at $(gethostname())")
 
-for i in 1:ceil(Int, length(ITEMS)/BATCH)
+n = ceil(Int, length(ITEMS)/BATCH)
+for i in 1:n
     TMPFILE = tempname() * ".txt"
     writedlm(TMPFILE, ITEMS[(i-1) * BATCH + 1 : min(i * BATCH, end)])
-    println(TMPFILE)
+    println("$i/$n, ", TMPFILE)
     Shell.run("""
-    cd /home/lizz/dev/dense_flow
-    ./extract_nvflow -v="$(TMPFILE)" -o="$(TARGETDIR)" -a=$(ALGORITHM) -s=$(STEP) -b=$(BOUND)
+cd /home/lizz/dev/dense_flow
+./extract_nvflow -v="$(TMPFILE)" -o="$(TARGETDIR)" -a=$(ALGORITHM) -s=$(STEP) -b=$(BOUND)
     """)
     rm(TMPFILE, force=true)
 end
