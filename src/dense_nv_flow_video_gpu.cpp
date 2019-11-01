@@ -9,14 +9,14 @@
 #include <string>
 #include <vector>
 using namespace cv::cuda;
+using boost::filesystem::exists;
 using boost::filesystem::is_directory;
-using boost::filesystem::is_regular_file;
 using boost::filesystem::path;
 
 void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm, int step, int bound, int new_width,
                              int new_height, int new_short, int dev_id, bool verbose) {
 
-    if (!is_regular_file(video_path)) {
+    if (!exists(video_path)) {
         LOG(ERROR) << video_path << " does not exist!";
         return;
     }
@@ -111,7 +111,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
         return;
     }
 
-    std::cout << "shitx2" << std::endl;
     // extract gray frames for flow
     vector<Mat> frames_gray;
     Mat capture_frame;
@@ -136,7 +135,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     if (verbose)
         std::cout << N << " frames decoded into cpu, using " << (end_read - before_read) << "s" << std::endl;
 
-    std::cout << "shitx2" << std::endl;
     // optflow
     double before_flow = CurrentSeconds();
 
@@ -184,7 +182,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     if (verbose)
         std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
 
-    std::cout << "shitx2" << std::endl;
     // encode
     double before_encode = CurrentSeconds();
     vector<vector<uchar>> output_x, output_y;
@@ -202,7 +199,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     if (verbose)
         std::cout << M << " flows encodeed to img, using " << (end_encode - before_encode) << "s" << std::endl;
 
-    std::cout << "shitx2" << std::endl;
     double before_write = CurrentSeconds();
     writeFlowImages(output_x, (output_dir / "flow_x").c_str(), step);
     writeFlowImages(output_y, (output_dir / "flow_y").c_str(), step);
@@ -210,7 +206,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     if (verbose)
         std::cout << M << " flows written to disk, using " << (end_write - before_write) << "s" << std::endl;
 
-    std::cout << "shitx2" << std::endl;
     std::cout << vid_name << " has " << M << " flows finished in " << (end_write - before_read) << "s, "
               << M / (end_write - before_read) << "fps" << std::endl;
 }

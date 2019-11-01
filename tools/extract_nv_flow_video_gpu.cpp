@@ -1,5 +1,6 @@
 #include "dense_flow.h"
 #include "utils.h"
+#include <clue/stringex.hpp>
 #include <clue/textio.hpp>
 #include <clue/thread_pool.hpp>
 
@@ -11,6 +12,7 @@ using clue::line_stream;
 using clue::read_file_content;
 using clue::string_view;
 using clue::thread_pool;
+using clue::trim;
 
 int main(int argc, char **argv) {
     try {
@@ -52,7 +54,7 @@ int main(int argc, char **argv) {
             thread_pool P(parallel);
             line_stream lstr(text);
             for (string_view line : lstr) {
-                path p(line.to_string());
+                path p(trim(line).to_string());
                 P.schedule([&, p](size_t tid) {
                     path out = path(output_dir) / p.stem();
                     create_directories(out);
