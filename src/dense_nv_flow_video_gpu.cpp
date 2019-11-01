@@ -204,12 +204,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     if (verbose)
         std::cout << M << " flows written to disk, using " << (end_write - before_write) << "s" << std::endl;
 
-    // done
-    path done = output_dir.parent_path() / ".done";
-    create_directories(done);
-    path donefile = done / video_path.stem();
-    createFile(donefile);
-
     std::cout << vid_name << " has " << M << " flows finished in " << (end_write - before_read) << "s, "
               << M / (end_write - before_read) << "fps" << std::endl;
 }
