@@ -13,6 +13,31 @@ using namespace cv::cuda;
 void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algorithm, int step, int bound, int new_width,
                              int new_height, int new_short, int dev_id, bool verbose) {
 
+    if (!fileExists(video_path)) {
+        LOG(ERROR) << video_path << " does not exist!";
+        return;
+    }
+    if (!dirExists(output_dir)) {
+        LOG(ERROR) << output_dir << " is not a valid dir!";
+        return;
+    }
+    if (algorithm != "nv" && algorithm != "tvl1" && algorithm != "farn" && algorithm != "brox") {
+        LOG(ERROR) << algorithm << " not supported!";
+        return;
+    }
+    if (bound <= 0) {
+        LOG(ERROR) << "bound should > 0!";
+        return;
+    }
+    if (new_height < 0 || new_width < 0 || new_short < 0) {
+        LOG(ERROR) << "height and width cannot < 0!";
+        return;
+    }
+    if (new_short > 0 && new_height + new_width != 0) {
+        LOG(ERROR) << "do not set height and width when set short!";
+        return;
+    }
+
     // read all frames into cpu
     vector<string> vid_splits;
     SplitString(video_path, vid_splits, "/");

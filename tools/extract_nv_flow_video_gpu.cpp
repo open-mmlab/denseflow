@@ -37,30 +37,6 @@ int main(int argc, char **argv) {
             cmd.printErrors();
             return 0;
         }
-        if (!fileExists(video_path)) {
-            LOG(ERROR) << video_path << " does not exist!";
-            return 1;
-        }
-        if (!dirExists(output_dir)) {
-            LOG(ERROR) << output_dir << " is not a valid dir!";
-            return 1;
-        }
-        if (algorithm != "nv" && algorithm != "tvl1" && algorithm != "farn" && algorithm != "brox") {
-            LOG(ERROR) << algorithm << " not supported!";
-            return 1;
-        }
-        if (bound <= 0) {
-            LOG(ERROR) << "bound should > 0!";
-            return 1;
-        }
-        if (new_height < 0 || new_width < 0 || new_short < 0) {
-            LOG(ERROR) << "height and width cannot < 0!";
-            return 1;
-        }
-        if (new_short > 0 && new_height + new_width != 0) {
-            LOG(ERROR) << "do not set height and width when set short!";
-            return 1;
-        }
 
         calcDenseNvFlowVideoGPU(video_path, output_dir, algorithm, step, bound, new_width, new_height, new_short,
                                 device_id, verbose);
