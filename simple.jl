@@ -30,6 +30,10 @@ s = ArgParseSettings()
         help = "for filtering"
         arg_type = String
         default = ""
+    "--batch"
+        help = "optical flow bound"
+        arg_type = Int
+        default = 64
 end
 args = parse_args(s)
 
@@ -40,8 +44,8 @@ TARGETDIR = args["targetdir"]
 ALGORITHM = args["alg"]
 STEP = args["step"]
 BOUND = args["bound"]
+BATCH = args["batch"]
 DONEDIR = joinpath(TARGETDIR, ".done")
-TMPFILE = tempname() * ".txt"
 mkpath(DONEDIR)
 
 # 1. find all folders needed to process
@@ -50,9 +54,13 @@ DONES = readdir(DONEDIR)
 ITEMS = [joinpath(SOURCEDIR, "$x.webm") for x in setdiff(Set(ITEMS), Set(DONES))]
 println("$(length(ITEMS)) items to process at $(gethostname())")
 
-writedlm(TMPFILE, ITEMS)
-println(TMPFILE)
-Shell.run("""
-cd /home/lizz/dev/dense_flow
-./extract_nvflow -v="$(TMPFILE)" -o="$(TARGETDIR)" -a=$(ALGORITHM) -s=$(STEP) -b=$(BOUND)
-""")
+for i in 1:ceil(Int, length(ITEMS)/BATCH)
+    TMPFILE = tempname() * ".txt"
+    writedlm(TMPFILE, ITEMS[(i-1) * BATCH + 1 : i * BATCH])
+    println(TMPFILE)
+    Shell.run("""
+    cd /home/lizz/dev/dense_flow
+    ./extract_nvflow -v="$(TMPFILE)" -o="$(TARGETDIR)" -a=$(ALGORITHM) -s=$(STEP) -b=$(BOUND)
+    """)
+    rm(TMPFILE, force=true)
+end
