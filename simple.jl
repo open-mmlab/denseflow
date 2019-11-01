@@ -56,7 +56,7 @@ println("$(length(ITEMS)) items to process at $(gethostname())")
 
 for i in 1:ceil(Int, length(ITEMS)/BATCH)
     TMPFILE = tempname() * ".txt"
-    writedlm(TMPFILE, ITEMS[(i-1) * BATCH + 1 : i * BATCH])
+    writedlm(TMPFILE, ITEMS[(i-1) * BATCH + 1 : min(i * BATCH, end)])
     println(TMPFILE)
     Shell.run("""
     cd /home/lizz/dev/dense_flow
