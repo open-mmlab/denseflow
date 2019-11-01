@@ -11,4 +11,6 @@ void SplitString(const std::string &s, std::vector<std::string> &v, const std::s
 
 double CurrentSeconds();
 
+void createFile(const path &ph);
+
 #endif // DENSEFLOW_UTILS_H
