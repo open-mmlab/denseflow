@@ -1,20 +1,16 @@
 #include "dense_flow.h"
 #include "utils.h"
-#include <clue/stringex.hpp>
 #include <clue/textio.hpp>
 #include <clue/thread_pool.hpp>
-#include <boost/filesystem.hpp>
 
 INITIALIZE_EASYLOGGINGPP
 
 using namespace cv::cuda;
-using clue::ends_with;
+using boost::filesystem::create_directories;
 using clue::line_stream;
 using clue::read_file_content;
 using clue::string_view;
 using clue::thread_pool;
-using boost::filesystem::path;
-using boost::filesystem::create_directories;
 
 int main(int argc, char **argv) {
     try {
@@ -32,8 +28,8 @@ int main(int argc, char **argv) {
                             "{ help        |                  | print help message }"};
 
         CommandLineParser cmd(argc, argv, keys);
-        string video_path = cmd.get<string>("video");
-        string output_dir = cmd.get<string>("outputDir");
+        path video_path(cmd.get<string>("video"));
+        path output_dir(cmd.get<string>("outputDir"));
         string algorithm = cmd.get<string>("algorithm");
         int step = cmd.get<int>("step");
         int bound = cmd.get<int>("bound");
@@ -51,18 +47,17 @@ int main(int argc, char **argv) {
             return 0;
         }
 
-        if (ends_with(video_path, ".txt")) {
-            string text = read_file_content(video_path);
+        if (video_path.extension() == ".txt") {
+            string text = read_file_content(video_path.c_str());
             thread_pool P(parallel);
             line_stream lstr(text);
             for (string_view line : lstr) {
-                P.schedule([&](size_t tid) {
-                    string v = line.to_string();
-                    path p(v);
+                path p(line.to_string());
+                P.schedule([&, p](size_t tid) {
                     path out = path(output_dir) / p.stem();
                     create_directories(out);
-                    calcDenseNvFlowVideoGPU(v, out.c_str(), algorithm, step, bound, new_width, new_height,
-                                            new_short, device_id, verbose);
+                    calcDenseNvFlowVideoGPU(p, out, algorithm, step, bound, new_width, new_height, new_short, device_id,
+                                            verbose);
                 });
             }
             P.wait_done();

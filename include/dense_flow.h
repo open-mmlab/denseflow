@@ -8,7 +8,7 @@
 #include "common.h"
 #include "easylogging++.h"
 
-void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algorithm, int step, int bound, int new_width,
+void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm, int step, int bound, int new_width,
                              int new_height, int new_short, int dev_id, bool verbose);
 
 #endif // DENSEFLOW_DENSE_FLOW_H

@@ -16,10 +16,12 @@
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <boost/filesystem.hpp>
 
 using namespace cv;
 using std::string;
 using std::vector;
+using boost::filesystem::path;
 
 void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &img_y, double lowerBound,
                         double higherBound);

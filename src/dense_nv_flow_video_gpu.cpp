@@ -9,15 +9,18 @@
 #include <string>
 #include <vector>
 using namespace cv::cuda;
+using boost::filesystem::is_directory;
+using boost::filesystem::is_regular_file;
+using boost::filesystem::path;
 
-void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algorithm, int step, int bound, int new_width,
+void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm, int step, int bound, int new_width,
                              int new_height, int new_short, int dev_id, bool verbose) {
 
-    if (!fileExists(video_path)) {
+    if (!is_regular_file(video_path)) {
         LOG(ERROR) << video_path << " does not exist!";
         return;
     }
-    if (!dirExists(output_dir)) {
+    if (!is_directory(output_dir)) {
         LOG(ERROR) << output_dir << " is not a valid dir!";
         return;
     }
@@ -39,12 +42,12 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
     }
 
     // read all frames into cpu
-    vector<string> vid_splits;
-    SplitString(video_path, vid_splits, "/");
-    string vid_name = vid_splits[vid_splits.size() - 1];
+    string vid_name = video_path.stem().c_str();
+    if (verbose)
+        std::cout << vid_name << std::endl;
 
     double before_read = CurrentSeconds();
-    VideoCapture video_stream(video_path);
+    VideoCapture video_stream(video_path.c_str());
     CHECK(video_stream.isOpened()) << "Cannot open video_path stream " << video_path;
     int width = video_stream.get(cv::CAP_PROP_FRAME_WIDTH);
     int height = video_stream.get(cv::CAP_PROP_FRAME_HEIGHT);
@@ -98,7 +101,7 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
         if (verbose)
             std::cout << N << " frames decoded into cpu, using " << (end_read - before_read) << "s" << std::endl;
         double before_write = CurrentSeconds();
-        writeImages(output_img, output_dir + "/img");
+        writeImages(output_img, (output_dir / "img").c_str());
         double end_write = CurrentSeconds();
         if (verbose)
             std::cout << N << " frames written to disk, using " << (end_read - before_read) << "s" << std::endl;
@@ -108,6 +111,7 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
         return;
     }
 
+    std::cout << "shitx2" << std::endl;
     // extract gray frames for flow
     vector<Mat> frames_gray;
     Mat capture_frame;
@@ -132,6 +136,7 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
     if (verbose)
         std::cout << N << " frames decoded into cpu, using " << (end_read - before_read) << "s" << std::endl;
 
+    std::cout << "shitx2" << std::endl;
     // optflow
     double before_flow = CurrentSeconds();
 
@@ -179,6 +184,7 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
     if (verbose)
         std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
 
+    std::cout << "shitx2" << std::endl;
     // encode
     double before_encode = CurrentSeconds();
     vector<vector<uchar>> output_x, output_y;
@@ -196,13 +202,15 @@ void calcDenseNvFlowVideoGPU(string video_path, string output_dir, string algori
     if (verbose)
         std::cout << M << " flows encodeed to img, using " << (end_encode - before_encode) << "s" << std::endl;
 
+    std::cout << "shitx2" << std::endl;
     double before_write = CurrentSeconds();
-    writeFlowImages(output_x, output_dir + "/flow_x", step);
-    writeFlowImages(output_y, output_dir + "/flow_y", step);
+    writeFlowImages(output_x, (output_dir / "flow_x").c_str(), step);
+    writeFlowImages(output_y, (output_dir / "flow_y").c_str(), step);
     double end_write = CurrentSeconds();
     if (verbose)
         std::cout << M << " flows written to disk, using " << (end_write - before_write) << "s" << std::endl;
 
+    std::cout << "shitx2" << std::endl;
     std::cout << vid_name << " has " << M << " flows finished in " << (end_write - before_read) << "s, "
               << M / (end_write - before_read) << "fps" << std::endl;
 }
