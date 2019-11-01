@@ -1,6 +1,5 @@
 #include "dense_flow.h"
 #include "opencv2/cudaarithm.hpp"
-#include "opencv2/cudacodec.hpp"
 #include "opencv2/cudaoptflow.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include "utils.h"

@@ -23,6 +23,7 @@ using std::vector;
 
 void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &img_y, double lowerBound,
                         double higherBound);
+
 void drawOptFlowMap(const Mat &flow, Mat &cflowmap, int step, double, const Scalar &color);
 
 void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, std::vector<uchar> &encoded_x,
@@ -31,7 +32,6 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, std::vector<uch
 inline void initializeMats(const Mat &frame, Mat &capture_image, Mat &capture_gray, Mat &prev_image, Mat &prev_gray) {
     capture_image.create(frame.size(), CV_8UC3);
     capture_gray.create(frame.size(), CV_8UC1);
-
     prev_image.create(frame.size(), CV_8UC3);
     prev_gray.create(frame.size(), CV_8UC1);
 }
@@ -48,7 +48,4 @@ inline bool dirExists(const string &path) {
 
 void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix);
 void writeFlowImages(std::vector<std::vector<uchar>> images, std::string name_prefix, const int step = 1);
-void writeImagesV2(std::vector<std::vector<uchar>> images, std::vector<std::vector<uchar>> flow_x,
-                   std::vector<std::vector<uchar>> flow_y, std::vector<std::string> names,
-                   const string &output_root_dir);
 #endif // DENSEFLOW_COMMON_H_H
