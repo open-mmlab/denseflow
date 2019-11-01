@@ -22,11 +22,17 @@ message(STATUS "    version: ${OpenCV_VERSION}")
 message(STATUS "    libraries: ${OpenCV_LIBS}")
 message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
-include_directories( ${OpenCV_INCLUDE_DIRS} include/ include/easylogging++/src include/CLUE/include)
-link_directories(${OpenCV_LIB_DIRS} )
+find_package(Boost REQUIRED COMPONENTS date_time filesystem iostreams)
+message(STATUS "Boost library status:")
+message(STATUS "    version: ${Boost_VERSION}")
+message(STATUS "    libraries: ${Boost_LIBRARIES}")
+message(STATUS "    include path: ${Boost_INCLUDE_DIRS}")
+
+include_directories( ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include/ include/easylogging++/src include/CLUE/include)
+link_directories(${OpenCV_LIB_DIRS} ${Boost_LIBRARIES} )
 
 add_library(denseflow src/common.cpp src/utils.cpp src/dense_nv_flow_video_gpu.cpp )
-target_link_libraries( denseflow ${OpenCV_LIBS}  )
+target_link_libraries( denseflow ${OpenCV_LIBS} Boost::filesystem ${Boost_LIBRARIES} )
 
 add_executable( extract_nvflow tools/extract_nv_flow_video_gpu.cpp)
-target_link_libraries( extract_nvflow ${OpenCV_LIBS} denseflow)
+target_link_libraries( extract_nvflow ${OpenCV_LIBS} Boost::filesystem ${Boost_LIBRARIES} denseflow)

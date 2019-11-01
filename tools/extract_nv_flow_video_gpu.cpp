@@ -1,9 +1,20 @@
 #include "dense_flow.h"
 #include "utils.h"
+#include <clue/stringex.hpp>
+#include <clue/textio.hpp>
+#include <clue/thread_pool.hpp>
+#include <boost/filesystem.hpp>
 
 INITIALIZE_EASYLOGGINGPP
 
 using namespace cv::cuda;
+using clue::ends_with;
+using clue::line_stream;
+using clue::read_file_content;
+using clue::string_view;
+using clue::thread_pool;
+using boost::filesystem::path;
+using boost::filesystem::create_directories;
 
 int main(int argc, char **argv) {
     try {
@@ -16,6 +27,7 @@ int main(int argc, char **argv) {
                             "{ h newHeight | 0                | new height }"
                             "{ sh short    | 0                | short side length }"
                             "{ d deviceId  | 0                | set gpu id }"
+                            "{ p parallel  | 1                | parallel threads }"
                             "{ vv verbose  |                  | verbose }"
                             "{ help        |                  | print help message }"};
 
@@ -29,6 +41,7 @@ int main(int argc, char **argv) {
         int new_height = cmd.get<int>("newHeight");
         int new_short = cmd.get<int>("short");
         int device_id = cmd.get<int>("deviceId");
+        int parallel = cmd.get<int>("parallel");
         bool verbose = cmd.has("verbose");
 
         cmd.about("GPU optical flow extraction.");
@@ -38,8 +51,25 @@ int main(int argc, char **argv) {
             return 0;
         }
 
-        calcDenseNvFlowVideoGPU(video_path, output_dir, algorithm, step, bound, new_width, new_height, new_short,
-                                device_id, verbose);
+        if (ends_with(video_path, ".txt")) {
+            string text = read_file_content(video_path);
+            thread_pool P(parallel);
+            line_stream lstr(text);
+            for (string_view line : lstr) {
+                P.schedule([&](size_t tid) {
+                    string v = line.to_string();
+                    path p(v);
+                    path out = path(output_dir) / p.stem();
+                    create_directories(out);
+                    calcDenseNvFlowVideoGPU(v, out.c_str(), algorithm, step, bound, new_width, new_height,
+                                            new_short, device_id, verbose);
+                });
+            }
+            P.wait_done();
+        } else {
+            calcDenseNvFlowVideoGPU(video_path, output_dir, algorithm, step, bound, new_width, new_height, new_short,
+                                    device_id, verbose);
+        }
 
     } catch (const std::exception &ex) {
         std::cout << ex.what() << std::endl;
