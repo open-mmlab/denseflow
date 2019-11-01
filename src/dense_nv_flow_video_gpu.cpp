@@ -137,7 +137,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
 
     // optflow
     double before_flow = CurrentSeconds();
-
     Ptr<cuda::FarnebackOpticalFlow> alg_farn = cuda::FarnebackOpticalFlow::create();
     Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
     Ptr<cuda::BroxOpticalFlow> alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
@@ -147,7 +146,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     int M = N - abs(step);
     if (M <= 0)
         return;
-
     vector<Mat> flows(M);
     for (size_t i = 0; i < M; ++i) {
         Mat flow;
@@ -177,7 +175,6 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
             flow_gpu.download(flows[i]);
         }
     }
-    alg_nv->collectGarbage();
     double end_flow = CurrentSeconds();
     if (verbose)
         std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
