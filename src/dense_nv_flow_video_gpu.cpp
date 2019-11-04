@@ -1,21 +1,15 @@
 #include "dense_flow.h"
 #include "opencv2/cudaarithm.hpp"
 #include "opencv2/cudaoptflow.hpp"
-#include "opencv2/xfeatures2d.hpp"
 #include "utils.h"
-#include <clue/thread_pool.hpp>
-#include <ctime>
-#include <fstream>
-#include <string>
-#include <vector>
-using namespace cv::cuda;
+
 using boost::filesystem::create_directories;
 using boost::filesystem::exists;
 using boost::filesystem::is_directory;
 using boost::filesystem::path;
 
 void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm, int step, int bound, int new_width,
-                             int new_height, int new_short, int dev_id, bool verbose) {
+                             int new_height, int new_short, int dev_id, bool verbose, Stream stream) {
 
     if (!exists(video_path)) {
         LOG(ERROR) << video_path << " does not exist!";
@@ -112,7 +106,7 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     }
 
     // extract gray frames for flow
-    vector<Mat> frames_gray;
+    vector<GpuMat> frames_gray;
     Mat capture_frame;
     while (true) {
         video_stream >> capture_frame;
@@ -124,9 +118,13 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
             Mat resized_frame_gray;
             resized_frame_gray.create(size, CV_8UC1);
             cv::resize(frame_gray, resized_frame_gray, size);
-            frames_gray.push_back(resized_frame_gray);
+            GpuMat resized_frame_gray_gpu;
+            resized_frame_gray_gpu.upload(resized_frame_gray, stream);
+            frames_gray.push_back(resized_frame_gray_gpu);
         } else {
-            frames_gray.push_back(frame_gray);
+            GpuMat frame_gray_gpu;
+            frame_gray_gpu.upload(frame_gray, stream);
+            frames_gray.push_back(frame_gray_gpu);
         }
     }
     video_stream.release();
@@ -147,32 +145,30 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     if (M <= 0)
         return;
     vector<Mat> flows(M);
-    GpuMat gray_a_gpu, gray_b_gpu, flow_gpu;
+    GpuMat flow_gpu;
     for (size_t i = 0; i < M; ++i) {
         Mat flow;
         int a = step > 0 ? i : i - step;
         int b = step > 0 ? i + step : i;
 
         if (algorithm == "nv") {
-            alg_nv->calc(frames_gray[a], frames_gray[b], flow);
+            alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
             alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
         } else {
-            gray_a_gpu.upload(frames_gray[a]);
-            gray_b_gpu.upload(frames_gray[b]);
             if (algorithm == "tvl1") {
-                alg_tvl1->calc(gray_a_gpu, gray_b_gpu, flow_gpu);
+                alg_tvl1->calc(frames_gray[a], frames_gray[b], flow_gpu, stream);
             } else if (algorithm == "farn") {
-                alg_farn->calc(gray_a_gpu, gray_b_gpu, flow_gpu);
+                alg_farn->calc(frames_gray[a], frames_gray[b], flow_gpu, stream);
             } else if (algorithm == "brox") {
                 GpuMat d_buf_0, d_buf_1;
-                gray_a_gpu.convertTo(d_buf_0, CV_32F, 1.0 / 255.0);
-                gray_b_gpu.convertTo(d_buf_1, CV_32F, 1.0 / 255.0);
-                alg_brox->calc(d_buf_0, d_buf_1, flow_gpu);
+                frames_gray[a].convertTo(d_buf_0, CV_32F, 1.0 / 255.0, stream);
+                frames_gray[b].convertTo(d_buf_1, CV_32F, 1.0 / 255.0, stream);
+                alg_brox->calc(d_buf_0, d_buf_1, flow_gpu, stream);
             } else {
                 LOG(ERROR) << "Unknown optical algorithm " << algorithm;
                 return;
             }
-            flow_gpu.download(flows[i]);
+            flow_gpu.download(flows[i], stream);
         }
     }
     double end_flow = CurrentSeconds();

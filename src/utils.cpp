@@ -1,7 +1,3 @@
-//
-// Created by Yuanjun Xiong on 18/11/2015.
-//
-
 #include "utils.h"
 
 void SplitString(const std::string &s, std::vector<std::string> &v, const std::string &c) {
@@ -21,4 +17,10 @@ void SplitString(const std::string &s, std::vector<std::string> &v, const std::s
 void createFile(const path &ph) {
     std::ofstream f(ph.BOOST_FILESYSTEM_C_STR);
     f.close();
+}
+
+double CurrentSeconds() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+               .count() /
+           1000.0;
 }

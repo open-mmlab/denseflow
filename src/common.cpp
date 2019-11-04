@@ -18,17 +18,8 @@ void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &i
 #undef CAST
 }
 
-void drawOptFlowMap(const Mat &flow, Mat &cflowmap, int step, double, const Scalar &color) {
-    for (int y = 0; y < cflowmap.rows; y += step)
-        for (int x = 0; x < cflowmap.cols; x += step) {
-            const Point2f &fxy = flow.at<Point2f>(y, x);
-            line(cflowmap, Point(x, y), Point(cvRound(x + fxy.x), cvRound(y + fxy.y)), color);
-            circle(cflowmap, Point(x, y), 2, color, -1);
-        }
-}
-
-void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, std::vector<uchar> &encoded_x,
-                   std::vector<uchar> &encoded_y, int bound, bool to_jpg) {
+void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &encoded_x, vector<uchar> &encoded_y,
+                   int bound, bool to_jpg) {
     Mat flow_img_x(flow_map_x.size(), CV_8UC1);
     Mat flow_img_y(flow_map_y.size(), CV_8UC1);
 
@@ -45,7 +36,7 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, std::vector<uch
     }
 }
 
-void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix) {
+void writeImages(vector<vector<uchar>> images, string name_prefix) {
     for (int i = 0; i < images.size(); ++i) {
         char tmp[256];
         sprintf(tmp, "_%05d.jpg", i);
@@ -56,7 +47,7 @@ void writeImages(std::vector<std::vector<uchar>> images, std::string name_prefix
     }
 }
 
-void writeFlowImages(std::vector<std::vector<uchar>> images, std::string name_prefix, const int step) {
+void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int step) {
     int base = step > 0 ? 0 : -step;
     for (int i = 0; i < images.size(); ++i) {
         char tmp[256];
@@ -72,29 +63,4 @@ void writeFlowImages(std::vector<std::vector<uchar>> images, std::string name_pr
         fwrite(images[i].data(), 1, images[i].size(), fp);
         fclose(fp);
     }
-}
-
-void writeImagesV2(std::vector<std::vector<uchar>> images, std::vector<std::vector<uchar>> flow_x,
-                   std::vector<std::vector<uchar>> flow_y, std::vector<std::string> names,
-                   const string &output_root_dir) {
-    for (int i = 0; i < names.size(); i++) {
-        // xx.jpg as default image formate
-        // std::cout << output_root_dir+"/flow_i_"+names[i]<< std::endl;
-        FILE *fp_img, *fp_x, *fp_y;
-        fp_img = fopen((output_root_dir + "/img_" + names[i]).c_str(), "wb");
-        fp_x = fopen((output_root_dir + "/flow_x_" + names[i]).c_str(), "wb");
-        fp_y = fopen((output_root_dir + "/flow_y_" + names[i]).c_str(), "wb");
-        fwrite(images[i].data(), 1, images[i].size(), fp_img);
-        fwrite(flow_x[i].data(), 1, flow_x[i].size(), fp_x);
-        fwrite(flow_y[i].data(), 1, flow_y[i].size(), fp_y);
-        fclose(fp_img);
-        fclose(fp_x);
-        fclose(fp_y);
-    }
-}
-
-double CurrentSeconds() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
-               .count() /
-           1000.0;
 }

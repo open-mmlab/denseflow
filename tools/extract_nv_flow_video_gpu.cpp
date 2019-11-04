@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
         }
 
         Mat::setDefaultAllocator(HostMem::getAllocator (HostMem::AllocType::PAGE_LOCKED));
+        Stream stream;
 
         if (video_path.extension() == ".txt") {
             string text = read_file_content(video_path.c_str());
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
                     path outdir = output_dir / vidfile.stem();
                     create_directories(outdir);
                     calcDenseNvFlowVideoGPU(vidfile, outdir, algorithm, step, bound, new_width, new_height, new_short,
-                                            device_id, verbose);
+                                            device_id, verbose, stream);
                     // mark done
                     path donedir = output_dir / ".done";
                     path donefile = donedir / vidfile.stem();
@@ -69,7 +70,7 @@ int main(int argc, char **argv) {
             }
         } else {
             calcDenseNvFlowVideoGPU(video_path, output_dir, algorithm, step, bound, new_width, new_height, new_short,
-                                    device_id, verbose);
+                                    device_id, verbose, stream);
         }
 
     } catch (const std::exception &ex) {
