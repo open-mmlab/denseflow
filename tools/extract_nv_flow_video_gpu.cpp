@@ -46,6 +46,8 @@ int main(int argc, char **argv) {
             return 0;
         }
 
+        Mat::setDefaultAllocator(HostMem::getAllocator (HostMem::AllocType::PAGE_LOCKED));
+
         if (video_path.extension() == ".txt") {
             string text = read_file_content(video_path.c_str());
             line_stream lstr(text);
