@@ -15,7 +15,7 @@ using clue::trim;
 
 int main(int argc, char **argv) {
     try {
-        const char *keys = {"{ v video     | video.mp4        | filename of video }"
+        const char *keys = {"{ v video     | video.mp4        | filename of video or a list.txt of videos }"
                             "{ o outputDir | /path/to/outputs | root dir of output }"
                             "{ a algorithm | nv               | optical flow algorithm (nv/tvl1/farn/brox) }"
                             "{ s step      | 1                | right - left (0 for img, non-0 for flow) }"
@@ -46,7 +46,7 @@ int main(int argc, char **argv) {
             return 0;
         }
 
-        Mat::setDefaultAllocator(HostMem::getAllocator (HostMem::AllocType::PAGE_LOCKED));
+        Mat::setDefaultAllocator(HostMem::getAllocator(HostMem::AllocType::PAGE_LOCKED));
         Stream stream;
 
         if (video_path.extension() == ".txt") {
