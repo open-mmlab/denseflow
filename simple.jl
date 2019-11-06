@@ -25,7 +25,7 @@ s = ArgParseSettings()
     "--alg", "-a"
         help = "nv | tvl1"
         arg_type = String
-        default = "nv"
+        default = "tvl1"
     "--suffix"
         help = "for filtering"
         arg_type = String
