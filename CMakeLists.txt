@@ -14,7 +14,7 @@ else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
 
-find_package( OpenCV 4.1.2 REQUIRED PATHS /home/lizz/app )
+find_package( OpenCV REQUIRED )
 
 message(STATUS "OpenCV library status:")
 message(STATUS "    config: ${OpenCV_DIR}")

@@ -15,7 +15,7 @@ void SplitString(const std::string &s, std::vector<std::string> &v, const std::s
 }
 
 void createFile(const path &ph) {
-    std::ofstream f(ph.BOOST_FILESYSTEM_C_STR);
+    std::ofstream f(ph.string());
     f.close();
 }
 

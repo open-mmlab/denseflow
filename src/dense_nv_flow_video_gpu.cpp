@@ -138,9 +138,9 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
     Ptr<cuda::FarnebackOpticalFlow> alg_farn = cuda::FarnebackOpticalFlow::create();
     Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
     Ptr<cuda::BroxOpticalFlow> alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
-    Ptr<NvidiaOpticalFlow_1_0> alg_nv = NvidiaOpticalFlow_1_0::create(
-        size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, false, false,
-        false, dev_id);
+    // Ptr<NvidiaOpticalFlow_1_0> alg_nv = NvidiaOpticalFlow_1_0::create(
+    //     size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, false, false,
+    //     false, dev_id);
     int M = N - abs(step);
     if (M <= 0)
         return;
@@ -152,8 +152,8 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
         int b = step > 0 ? i + step : i;
 
         if (algorithm == "nv") {
-            alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
-            alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
+            // alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
+            // alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
         } else {
             if (algorithm == "tvl1") {
                 alg_tvl1->calc(frames_gray[a], frames_gray[b], flow_gpu, stream);
