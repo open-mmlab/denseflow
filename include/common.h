@@ -32,6 +32,6 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &
 
 void writeImages(vector<vector<uchar>> images, string name_prefix);
 
-void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int step = 1);
+void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int step = 1, const int start = 0);
 
 #endif // DENSEFLOW_COMMON_H_H

@@ -47,16 +47,16 @@ void writeImages(vector<vector<uchar>> images, string name_prefix) {
     }
 }
 
-void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int step) {
+void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int step, const int start) {
     int base = step > 0 ? 0 : -step;
     for (int i = 0; i < images.size(); ++i) {
         char tmp[256];
         if (step > 1) {
-            sprintf(tmp, "_p%d_%05d.jpg", step, i + base);
+            sprintf(tmp, "_p%d_%05d.jpg", step, start + i + base);
         } else if (step < 0) {
-            sprintf(tmp, "_m%d_%05d.jpg", -step, i + base);
+            sprintf(tmp, "_m%d_%05d.jpg", -step, start + i + base);
         } else {
-            sprintf(tmp, "_%05d.jpg", i + base);
+            sprintf(tmp, "_%05d.jpg", start + i + base);
         }
         FILE *fp;
         fp = fopen((name_prefix + tmp).c_str(), "wb");
