@@ -217,7 +217,7 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
         return ;
     }
 
-    int video_frame_idx = 0;
+    int video_flow_idx = 0;
     while(true) {
         // extract gray frames for flow
         vector<GpuMat> frames_gray;
@@ -228,16 +228,16 @@ void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm,
         if (verbose)
             std::cout << N << " frames decoded into cpu, using " << (end_read1 - before_read1) << "s" << std::endl;
 
-        video_frame_idx += N;
         int M = N - abs(step);
         if (M <= 0) {
             video_stream.release();
             break;
         } else {
-            optflow_post(frames_gray, algorithm, step, bound, video_frame_idx-N, output_dir, stream, verbose);
+            optflow_post(frames_gray, algorithm, step, bound, video_flow_idx, output_dir, stream, verbose);
             if (N < batch_maxsize) // read done, not full
                 break;
-            video_stream.set(cv::CAP_PROP_POS_FRAMES, video_frame_idx-abs(step));
+            video_flow_idx += M;    
+            video_stream.set(cv::CAP_PROP_POS_FRAMES, video_flow_idx);
 
         }
     }
