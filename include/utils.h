@@ -1,7 +1,3 @@
-//
-// Created by Yuanjun Xiong on 18/11/2015.
-//
-
 #ifndef DENSEFLOW_UTILS_H
 #define DENSEFLOW_UTILS_H
 
@@ -22,5 +18,7 @@ inline bool dirExists(const string &path) {
     struct stat info;
     return stat(path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR);
 }
+
+void hdf5_save_nd_dataset(const hid_t file_id, const string& dataset_name, const Mat& mat);
 
 #endif // DENSEFLOW_UTILS_H

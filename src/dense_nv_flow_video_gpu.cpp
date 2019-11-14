@@ -2,108 +2,63 @@
 #include "opencv2/cudaarithm.hpp"
 #include "opencv2/cudaoptflow.hpp"
 #include "utils.h"
+#include <time.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
-using boost::filesystem::create_directories;
-using boost::filesystem::exists;
-using boost::filesystem::is_directory;
-using boost::filesystem::path;
-
-void optflow_post(const vector<GpuMat>& frames_gray, const string& algorithm, int step, int bound, 
-    int base_start, path output_dir, Stream& stream, bool verbose) {
-    // optflow
-    double before_flow = CurrentSeconds();
-    Ptr<cuda::FarnebackOpticalFlow> alg_farn = cuda::FarnebackOpticalFlow::create();
-    Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
-    Ptr<cuda::BroxOpticalFlow> alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
-    // Ptr<NvidiaOpticalFlow_1_0> alg_nv = NvidiaOpticalFlow_1_0::create(
-    //     size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, false, false,
-    //     false, dev_id); 
-    int N = frames_gray.size();
-    int M = N - abs(step);
-    if (M <= 0)
-        return;
-    vector<Mat> flows(M);
-    GpuMat flow_gpu;
-    for (size_t i = 0; i < M; ++i) {
-        Mat flow;
-        int a = step > 0 ? i : i - step;
-        int b = step > 0 ? i + step : i;
-
-        if (algorithm == "nv") {
-            // alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
-            // alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
-        } else {
-            if (algorithm == "tvl1") {
-                alg_tvl1->calc(frames_gray[a], frames_gray[b], flow_gpu, stream);
-            } else if (algorithm == "farn") {
-                alg_farn->calc(frames_gray[a], frames_gray[b], flow_gpu, stream);
-            } else if (algorithm == "brox") {
-                GpuMat d_buf_0, d_buf_1;
-                frames_gray[a].convertTo(d_buf_0, CV_32F, 1.0 / 255.0, stream);
-                frames_gray[b].convertTo(d_buf_1, CV_32F, 1.0 / 255.0, stream);
-                alg_brox->calc(d_buf_0, d_buf_1, flow_gpu, stream);
-            } else {
-                LOG(ERROR) << "Unknown optical algorithm " << algorithm;
-                return;
-            }
-            flow_gpu.download(flows[i], stream);
+bool DenseFlow::check_param() {
+    for (int i = 0; i < video_paths.size(); i++) {
+        if (!exists(video_paths[i])) {
+            cout << video_paths[i] << " does not exist!";
+            return false;
+        }
+        if (!is_directory(output_dirs[i])) {
+            cout << output_dirs[i] << " is not a valid dir!";
+            return false;
         }
     }
-    double end_flow = CurrentSeconds();
-    if (verbose)
-        std::cout << M << " flows computed, using " << (end_flow - before_flow) << "s" << std::endl;
-
-    // encode
-    double before_encode = CurrentSeconds();
-    vector<vector<uchar>> output_x, output_y;
-    Mat planes[2];
-    for (int i = 0; i < M; ++i) {
-        split(flows[i], planes);
-        Mat flow_x(planes[0]);
-        Mat flow_y(planes[1]);
-        vector<uchar> str_x, str_y;
-        encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
-        output_x.push_back(str_x);
-        output_y.push_back(str_y);
+    if (algorithm != "nv" && algorithm != "tvl1" && algorithm != "farn" && algorithm != "brox") {
+        cout << algorithm << " not supported!";
+        return false;
     }
-    double end_encode = CurrentSeconds();
-    if (verbose)
-        std::cout << M << " flows encodeed to img, using " << (end_encode - before_encode) << "s" << std::endl;
+    if (bound <= 0) {
+        cout << "bound should > 0!";
+        return false;
+    }
+    if (new_height < 0 || new_width < 0 || new_short < 0) {
+        cout << "height and width cannot < 0!";
+        return false;
+    }
+    if (new_short > 0 && new_height + new_width != 0) {
+        cout << "do not set height and width when set short!";
+        return false;
+    }
 
-    double before_write = CurrentSeconds();
-    writeFlowImages(output_x, (output_dir / "flow_x").c_str(), step, base_start);
-    writeFlowImages(output_y, (output_dir / "flow_y").c_str(), step, base_start);
-    double end_write = CurrentSeconds();
-    if (verbose)
-        std::cout << M << " flows written to disk, using " << (end_write - before_write) << "s" << std::endl;
+    return true;
 }
 
-bool get_new_size(const VideoCapture& video_stream, int new_width, int new_height, int new_short, 
-    Size& size, int& num_frames) {
+bool DenseFlow::get_new_size(const VideoCapture& video_stream, Size &new_size, int& frames_num) {
     int width = video_stream.get(cv::CAP_PROP_FRAME_WIDTH);
     int height = video_stream.get(cv::CAP_PROP_FRAME_HEIGHT);
-    num_frames = video_stream.get(cv::CAP_PROP_FRAME_COUNT);
-    size.width = width;
-    size.height = height;
-    
+    frames_num = video_stream.get(cv::CAP_PROP_FRAME_COUNT);
     // check resize
     bool do_resize = true;
     if (new_width > 0 && new_height > 0) {
-        size.width = new_width;
-        size.height = new_height;
+        new_size.width = new_width;
+        new_size.height = new_height;
     } else if (new_width > 0 && new_height == 0) {
-        size.width = new_width;
-        size.height = (int)round(height * 1.0 / width * new_width);
+        new_size.width = new_width;
+        new_size.height = (int)round(height * 1.0 / width * new_width);
     } else if (new_width == 0 && new_height > 0) {
-        size.width = (int)round(width * 1.0 / height * new_height);
-        size.height = new_height;
+        new_size.width = (int)round(width * 1.0 / height * new_height);
+        new_size.height = new_height;
     } else if (new_short > 0 && min(width, height) > new_short) {
         if (width < height) {
-            size.width = new_short;
-            size.height = (int)round(height * 1.0 / width * new_short);
+            new_size.width = new_short;
+            new_size.height = (int)round(height * 1.0 / width * new_short);
         } else {
-            size.width = (int)round(width * 1.0 / height * new_short);
-            size.height = new_short;
+            new_size.width = (int)round(width * 1.0 / height * new_short);
+            new_size.height = new_short;
         }
     } else {
         do_resize = false;
@@ -111,139 +66,231 @@ bool get_new_size(const VideoCapture& video_stream, int new_width, int new_heigh
     return do_resize;
 }
 
-void extract_frames_only(VideoCapture& video_stream, bool do_resize, const Size& size, path output_dir, bool verbose) {
-    double before_read = CurrentSeconds();
-    vector<vector<uchar>> output_img;
-    Mat capture_frame, resized_frame;
-    if (do_resize)
-        resized_frame.create(size, CV_8UC3);
-    while (true) {
-        vector<uchar> str_img;
-        video_stream >> capture_frame;
-        if (capture_frame.empty())
-            break;
-        if (do_resize) {
-            cv::resize(capture_frame, resized_frame, size);
-            imencode(".jpg", resized_frame, str_img);
-        } else {
-            imencode(".jpg", capture_frame, str_img);
-        }
-        output_img.push_back(str_img);
-    }
-    int N = output_img.size();
-    double end_read = CurrentSeconds();
-    if (verbose)
-        std::cout << N << " frames decoded into cpu, using " << (end_read - before_read) << "s" << std::endl;
-    double before_write = CurrentSeconds();
-    writeImages(output_img, (output_dir / "img").c_str());
-    double end_write = CurrentSeconds();
-    if (verbose)
-        std::cout << N << " frames written to disk, using " << (end_read - before_read) << "s" << std::endl;
-
-    std::cout << " has " << N << " frames extracted in " << (end_write - before_read) << "s, "
-                << N / (end_write - before_read) << "fps" << std::endl;
-}
-
-void prepare_frames_gray_batch(VideoCapture& video_stream, vector<GpuMat>& frames_gray, bool do_resize, 
-    const Size& size, const int batch_maxsize, Stream& stream) {
+bool DenseFlow::load_frames_batch(VideoCapture& video_stream, vector<Mat>& frames_gray, bool do_resize, const Size& size) {
     Mat capture_frame;
     int cnt = 0;
     while (cnt<batch_maxsize) {
         video_stream >> capture_frame;
-        if (capture_frame.empty())
-            break;
+        if (capture_frame.empty()) {
+            return false;
+        }
         Mat frame_gray;
         cvtColor(capture_frame, frame_gray, COLOR_BGR2GRAY);
         if (do_resize) {
             Mat resized_frame_gray;
             resized_frame_gray.create(size, CV_8UC1);
             cv::resize(frame_gray, resized_frame_gray, size);
-            GpuMat resized_frame_gray_gpu;
-            resized_frame_gray_gpu.upload(resized_frame_gray, stream);
-            frames_gray.push_back(resized_frame_gray_gpu);
+            frames_gray.push_back(resized_frame_gray);
         } else {
-            GpuMat frame_gray_gpu;
-            frame_gray_gpu.upload(frame_gray, stream);
-            frames_gray.push_back(frame_gray_gpu);
+            frames_gray.push_back(frame_gray);
         }
         cnt ++;
     }
+    return true;
 }
 
-void calcDenseNvFlowVideoGPU(path video_path, path output_dir, string algorithm, int step, int bound, int new_width,
-                             int new_height, int new_short, int dev_id, bool verbose, Stream stream) {
-    const int batch_maxsize = 256;
-
-    if (!exists(video_path)) {
-        LOG(ERROR) << video_path << " does not exist!";
-        return;
-    }
-    if (!is_directory(output_dir)) {
-        LOG(ERROR) << output_dir << " is not a valid dir!";
-        return;
-    }
-    if (algorithm != "nv" && algorithm != "tvl1" && algorithm != "farn" && algorithm != "brox") {
-        LOG(ERROR) << algorithm << " not supported!";
-        return;
-    }
-    if (bound <= 0) {
-        LOG(ERROR) << "bound should > 0!";
-        return;
-    }
-    if (new_height < 0 || new_width < 0 || new_short < 0) {
-        LOG(ERROR) << "height and width cannot < 0!";
-        return;
-    }
-    if (new_short > 0 && new_height + new_width != 0) {
-        LOG(ERROR) << "do not set height and width when set short!";
-        return;
-    }
-
-    // read all frames into cpu
-    string vid_name = video_path.stem().c_str();
-    if (verbose)
-        std::cout << vid_name << std::endl;
-
-    double before_read = CurrentSeconds();
-    VideoCapture video_stream(video_path.c_str());
-    CHECK(video_stream.isOpened()) << "Cannot open video_path stream " << video_path;
-
-    Size size;
-    int num_frames;
-    bool do_resize = get_new_size(video_stream, new_width, new_height, new_short, size, num_frames);
-    // extract frames only
-    if (step == 0) {
-        extract_frames_only(video_stream, do_resize, size, output_dir, verbose);
-        return ;
-    }
-
+void DenseFlow::load_frames_video(VideoCapture& video_stream, bool do_resize, const Size& size, path output_dir, bool verbose) {
     int video_flow_idx = 0;
     while(true) {
-        // extract gray frames for flow
-        vector<GpuMat> frames_gray;
-        double before_read1 = CurrentSeconds();
-        prepare_frames_gray_batch(video_stream, frames_gray, do_resize, size, batch_maxsize, stream);
-        int N = frames_gray.size();
-        double end_read1 = CurrentSeconds();
-        if (verbose)
-            std::cout << N << " frames decoded into cpu, using " << (end_read1 - before_read1) << "s" << std::endl;
-
-        int M = N - abs(step);
-        if (M <= 0) {
-            video_stream.release();
+        vector<Mat> frames_gray;
+        bool is_open = load_frames_batch(video_stream, frames_gray, do_resize, size);
+        FlowBuffer frames_gray_item(frames_gray, output_dir, video_flow_idx);
+        unique_lock<mutex> lock(frames_gray_mtx);
+        while(frames_gray_queue.size() == frames_gray_maxsize) {
+            if (verbose)
+                cout << "frames_gray_queue full, waiting..." << endl;
+            cond_frames_gray_produce.wait(lock);
+        }
+        frames_gray_queue.push(frames_gray_item);
+        if (verbose) 
+            cout << "push frames gray, video_flow_idx: " << video_flow_idx << ", batch_size: " << frames_gray.size() << endl;
+        cond_frames_gray_consume.notify_all();
+        lock.unlock();
+        // read done a video
+        if (!is_open)
             break;
-        } else {
-            optflow_post(frames_gray, algorithm, step, bound, video_flow_idx, output_dir, stream, verbose);
-            if (N < batch_maxsize) // read done, not full
-                break;
-            video_flow_idx += M;    
-            video_stream.set(cv::CAP_PROP_POS_FRAMES, video_flow_idx);
+        int M = frames_gray.size() - abs(step);
+        video_flow_idx += M;    
+        video_stream.set(cv::CAP_PROP_POS_FRAMES, video_flow_idx);     
+    }
+}
 
+void DenseFlow::load_frames(bool verbose) {
+    for (size_t i=0; i<video_paths.size(); i++) {
+        path video_path = video_paths[i];
+        path output_dir = output_dirs[i];
+        
+        // create h5
+        char h5_ext[256];
+        if (step > 1) {
+            sprintf(h5_ext, "_p%d.h5", step);
+        } else if (step < 0) {
+            sprintf(h5_ext, "_m%d.h5", -step);
+        } else {
+            sprintf(h5_ext, ".h5");
+        }
+        string h5_file = output_dir.string() + h5_ext;
+        cout << h5_file << endl;
+        // overwrite if exists
+        hid_t file_id = H5Fcreate(h5_file.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+        herr_t status = H5Fclose(file_id);
+        if (status <0)
+            throw std::runtime_error("Failed to save hdf5 file: " + h5_file);
+
+        VideoCapture video_stream(video_path.c_str());
+        if(!video_stream.isOpened()) 
+            throw std::runtime_error("cannot open video_path stream:" + video_path.string());
+        Size size;
+        int frames_num;
+        bool do_resize = get_new_size(video_stream, size, frames_num);
+        load_frames_video(video_stream, do_resize, size, output_dir, false);
+        video_stream.release();
+        if (verbose)
+            std::cout << "load done video: " << video_path << std::endl;
+    }
+    ready_to_exit1 = true;
+    cout << "load frames exit." << endl;
+}
+
+void DenseFlow::calc_optflows_imp(const FlowBuffer& frames_gray, const string& algorithm, int step,
+    bool verbose, Stream& stream) {
+    Ptr<cuda::FarnebackOpticalFlow> alg_farn = cuda::FarnebackOpticalFlow::create();
+    Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
+    Ptr<cuda::BroxOpticalFlow> alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
+    // Ptr<NvidiaOpticalFlow_1_0> alg_nv = NvidiaOpticalFlow_1_0::create(
+    //     size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, false, false,
+    //     false, dev_id); 
+    int N = frames_gray.item_data.size();
+    int M = N - abs(step);
+    if (M <= 0)
+        return;
+    vector<Mat> flows(M);
+    GpuMat flow_gpu;
+    GpuMat gray_a, gray_b;
+    for (size_t i = 0; i < M; ++i) {
+        Mat flow;
+        int a = step > 0 ? i : i - step;
+        int b = step > 0 ? i + step : i;
+        gray_a.upload(frames_gray.item_data[a], stream);
+        gray_b.upload(frames_gray.item_data[b], stream);
+        if (algorithm == "nv") {
+            // alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
+            // alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
+        } else {
+            if (algorithm == "tvl1") {
+                alg_tvl1->calc(gray_a, gray_b, flow_gpu, stream);
+            } else if (algorithm == "farn") {
+                alg_farn->calc(gray_a, gray_b, flow_gpu, stream);
+            } else if (algorithm == "brox") {
+                GpuMat d_buf_0, d_buf_1;
+                gray_a.convertTo(d_buf_0, CV_32F, 1.0 / 255.0, stream);
+                gray_b.convertTo(d_buf_1, CV_32F, 1.0 / 255.0, stream);
+                alg_brox->calc(d_buf_0, d_buf_1, flow_gpu, stream);
+            } else {
+                throw std::runtime_error("unknown optical algorithm: "+algorithm);
+                return;
+            }
+            flow_gpu.download(flows[i]);
         }
     }
+    FlowBuffer flow_buffer(flows, frames_gray.output_dir, frames_gray.base_start);
+    unique_lock<mutex> lock(flows_mtx);
+    while(flows_queue.size() == flows_maxsize) {
+        if (verbose)
+            cout << "flows queue is full, waiting..." << endl;
+        cond_flows_produce.wait(lock);
+    }
+    flows_queue.push(flow_buffer);
+    if (verbose)
+        cout << "flows queue push a item, size: " << flows_queue.size() << endl;
+    cond_flows_consume.notify_all();
+    lock.unlock();
+}
 
-    double end_write = CurrentSeconds();
-    int M = num_frames - abs(step);
-    std::cout << vid_name << " has " << M << " flows finished in " << (end_write - before_read) << "s, "
-              << M / (end_write - before_read) << "fps" << std::endl;
+void DenseFlow::calc_optflows(bool verbose) {
+    while(true) {
+        unique_lock<mutex> lock(frames_gray_mtx);
+        while(frames_gray_queue.size() == 0) {
+            if (verbose)
+                cout << "frames_gray_queue empty, waiting..." << endl;
+            cond_frames_gray_consume.wait(lock);
+        }
+        FlowBuffer frames_gray = frames_gray_queue.front();
+        frames_gray_queue.pop();
+        if (ready_to_exit1 && frames_gray_queue.size()==0)
+            ready_to_exit2 = true;
+        cond_frames_gray_produce.notify_all();
+        lock.unlock();
+        calc_optflows_imp(frames_gray, algorithm, step, false, stream);
+        if (ready_to_exit2) 
+            break;
+    }
+    cout << "calc optflows exit." << endl;
+}
+
+void DenseFlow::encode_save(bool verbose) {
+    string record_tmp = "";
+    bool init = false;
+    while(true) {
+        unique_lock<mutex> lock(flows_mtx);
+        while(flows_queue.size() == 0) {
+            if (verbose)
+                cout <<"flows queue empty, waiting..." << endl;
+            cond_flows_consume.wait(lock);
+        }
+        FlowBuffer flow_buffer = flows_queue.front();
+        flows_queue.pop();
+        if (ready_to_exit2 && flows_queue.size()==0)
+            ready_to_exit3 = true;
+        if (verbose)
+            cout << "flows queue get a item, size: " << flows_queue.size() << endl;
+        cond_flows_produce.notify_all();
+        lock.unlock();        
+        // encode
+        vector<vector<uchar>> output_x, output_y;
+        vector<Mat> output_h5_x, output_h5_y;
+        Mat planes[2];
+        int M = flow_buffer.item_data.size();
+        for (int i = 0; i < M; ++i) {
+            split(flow_buffer.item_data[i], planes);
+            Mat flow_x(planes[0]);
+            Mat flow_y(planes[1]);
+            vector<uchar> str_x, str_y;
+            encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
+            output_x.push_back(str_x);
+            output_y.push_back(str_y);
+            output_h5_x.push_back(flow_x);
+            output_h5_y.push_back(flow_y);
+        }        
+        // save
+        writeFlowImages(output_x, (flow_buffer.output_dir / "flow_x").c_str(), step, flow_buffer.base_start);
+        writeFlowImages(output_y, (flow_buffer.output_dir / "flow_y").c_str(), step, flow_buffer.base_start);
+        writeHDF5(output_h5_x, flow_buffer.output_dir.c_str(), "flow_x", step, flow_buffer.base_start);
+        writeHDF5(output_h5_y, flow_buffer.output_dir.c_str(), "flow_y", step, flow_buffer.base_start);
+        if (!init) {
+            record_tmp = flow_buffer.output_dir.stem().string();
+            init = true;
+        }
+        // record, the last batch in a video (approximately)
+        if ((M+abs(step)<batch_maxsize) || ((M+abs(step)==batch_maxsize) && record_tmp!=flow_buffer.output_dir.stem().string())) {
+            path donedir;
+            if (has_class)
+                donedir = flow_buffer.output_dir.parent_path().parent_path() / ".done" / flow_buffer.output_dir.parent_path().filename();
+            else
+                donedir = flow_buffer.output_dir.parent_path() / ".done";
+            path donefile = donedir / record_tmp;
+            createFile(donefile);
+            record_tmp = flow_buffer.output_dir.stem().string();
+        } 
+        if (ready_to_exit3)
+            break;
+    }
+    std::cout << "post process exit." << std::endl;
+}
+
+void calcDenseNvFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, 
+        int new_width, int new_height, int new_short, bool has_class, int dev_id, bool verbose) {
+    setDevice(dev_id);
+    DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short, has_class);
+    flow_video_gpu.launch(verbose);
 }

@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project( denseFlow )
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+project(denseFlow)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -13,8 +11,9 @@ elseif(COMPILER_SUPPORTS_CXX0X)
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
 endif()
-
-find_package( OpenCV REQUIRED )
+FIND_PACKAGE(CUDA REQUIRED)
+find_package( OpenCV REQUIRED)
+find_package(HDF5 COMPONENTS HL REQUIRED)
 
 message(STATUS "OpenCV library status:")
 message(STATUS "    config: ${OpenCV_DIR}")
@@ -28,11 +27,11 @@ message(STATUS "    version: ${Boost_VERSION}")
 message(STATUS "    libraries: ${Boost_LIBRARIES}")
 message(STATUS "    include path: ${Boost_INCLUDE_DIRS}")
 
-include_directories( ${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include/ include/easylogging++/src include/CLUE/include)
-link_directories(${OpenCV_LIB_DIRS} ${Boost_LIBRARIES} )
+include_directories(${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} ${HDF5_INCLUDE_DIRS} ${HDF5_HL_INCLUDE_DIR} include)
+link_directories(${OpenCV_LIB_DIRS} ${Boost_LIBRARIES})
 
-add_library(denseflow src/common.cpp src/utils.cpp src/dense_nv_flow_video_gpu.cpp )
-target_link_libraries( denseflow ${OpenCV_LIBS} Boost::filesystem ${Boost_LIBRARIES} )
+add_library(denseflow src/common.cpp src/utils.cpp src/dense_nv_flow_video_gpu.cpp)
+target_link_libraries(denseflow ${OpenCV_LIBS} Boost::filesystem ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES} pthread)
 
-add_executable( extract_nvflow tools/extract_nv_flow_video_gpu.cpp)
-target_link_libraries( extract_nvflow ${OpenCV_LIBS} Boost::filesystem ${Boost_LIBRARIES} denseflow)
+add_executable(extract_nvflow tools/extract_nv_flow_video_gpu.cpp)
+target_link_libraries(extract_nvflow ${OpenCV_LIBS} Boost::filesystem ${Boost_LIBRARIES} denseflow)

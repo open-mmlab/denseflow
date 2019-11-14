@@ -1,31 +1,22 @@
 #include "dense_flow.h"
 #include "opencv2/opencv.hpp"
 #include "utils.h"
-#include <clue/stringex.hpp>
-#include <clue/textio.hpp>
-
-INITIALIZE_EASYLOGGINGPP
-
-using namespace cv::cuda;
-using boost::filesystem::create_directories;
-using clue::line_stream;
-using clue::read_file_content;
-using clue::string_view;
-using clue::trim;
+#include <fstream>
 
 int main(int argc, char **argv) {
     try {
-        const char *keys = {"{ v video     | video.mp4        | filename of video or a list.txt of videos }"
-                            "{ o outputDir | /path/to/outputs | root dir of output }"
-                            "{ a algorithm | nv               | optical flow algorithm (nv/tvl1/farn/brox) }"
-                            "{ s step      | 1                | right - left (0 for img, non-0 for flow) }"
-                            "{ b bound     | 32               | maximum of optical flow }"
-                            "{ w newWidth  | 0                | new width }"
-                            "{ h newHeight | 0                | new height }"
-                            "{ sh short    | 0                | short side length }"
-                            "{ d deviceId  | 0                | set gpu id }"
-                            "{ vv verbose  |                  | verbose }"
-                            "{ help        |                  | print help message }"};
+        const char *keys = {"{ v video        | video.mp4        | filename of video or a list.txt of videos }"
+                            "{ o outputDir    | /path/to/outputs | root dir of output }"
+                            "{ a algorithm    | nv               | optical flow algorithm (nv/tvl1/farn/brox) }"
+                            "{ s step         | 1                | right - left (0 for img, non-0 for flow) }"
+                            "{ b bound        | 32               | maximum of optical flow }"
+                            "{ w newWidth     | 0                | new width }"
+                            "{ h newHeight    | 0                | new height }"
+                            "{ sh short       | 0                | short side length }"
+                            "{ d deviceId     | 0                | set gpu id }"
+                            "{ cf classFolder |                  | outputDir/class/video/flow.jpg }"
+                            "{ vv verbose     |                  | verbose }"
+                            "{ help           |                  | print help message }"};
 
         CommandLineParser cmd(argc, argv, keys);
         path video_path(cmd.get<string>("video"));
@@ -37,6 +28,7 @@ int main(int argc, char **argv) {
         int new_height = cmd.get<int>("newHeight");
         int new_short = cmd.get<int>("short");
         int device_id = cmd.get<int>("deviceId");
+        bool has_class = cmd.has("classFolder");
         bool verbose = cmd.has("verbose");
 
         cmd.about("GPU optical flow extraction.");
@@ -47,31 +39,38 @@ int main(int argc, char **argv) {
         }
 
         Mat::setDefaultAllocator(HostMem::getAllocator(HostMem::AllocType::PAGE_LOCKED));
-        Stream stream;
 
+        vector<path> video_paths;
+        vector<path> output_dirs;
         if (video_path.extension() == ".txt") {
-            string text = read_file_content(video_path.c_str());
-            line_stream lstr(text);
-            for (string_view line : lstr) {
-                try {
-                    path vidfile(trim(line).to_string());
-                    path outdir = output_dir / vidfile.stem();
-                    create_directories(outdir);
-                    calcDenseNvFlowVideoGPU(vidfile, outdir, algorithm, step, bound, new_width, new_height, new_short,
-                                            device_id, verbose, stream);
-                    // mark done
-                    path donedir = output_dir / ".done";
-                    path donefile = donedir / vidfile.stem();
-                    create_directories(donedir);
-                    createFile(donefile);
-                } catch (const std::exception &ex) {
-                    std::cout << trim(line) << " errored: " << ex.what() << std::endl;
+            std::ifstream ifs(video_path.string());
+            string line;
+            while (getline(ifs, line)) {
+                path vidfile(line);
+                path outdir;
+                if (has_class) {
+                    outdir = output_dir / vidfile.parent_path().filename() / vidfile.stem();
+                } else {
+                    outdir = output_dir / vidfile.stem();
                 }
+                create_directories(outdir);
+                video_paths.push_back(vidfile);
+                output_dirs.push_back(outdir);
+                // mark done
+                path donedir;
+                if (has_class) {
+                    donedir = output_dir / ".done" / vidfile.parent_path().filename();
+                } else {
+                    donedir = output_dir / ".done";
+                }                
+                create_directories(donedir);                
             }
         } else {
-            calcDenseNvFlowVideoGPU(video_path, output_dir, algorithm, step, bound, new_width, new_height, new_short,
-                                    device_id, verbose, stream);
+            video_paths.push_back(video_path);
+            output_dirs.push_back(output_dir);
         }
+        calcDenseNvFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
+            has_class, device_id, verbose);
 
     } catch (const std::exception &ex) {
         std::cout << ex.what() << std::endl;

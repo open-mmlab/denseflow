@@ -1,6 +1,0 @@
-[submodule "include/easylogging++"]
-	path = include/easylogging++
-	url = https://github.com/easylogging/easyloggingpp
-[submodule "include/CLUE"]
-	path = include/CLUE
-	url = https://github.com/lindahua/CLUE

@@ -1,29 +1,27 @@
 Extracting dense flow field given a video.
 
 #### Dependencies:
-- LibZip:
-to install on ubuntu ```apt-get install libzip-dev``` on mac ```brew install libzip```
-
-#### For OpenCV 3 Users
-Please see the [opencv-3.1](https://github.com/yjxiong/dense_flow/tree/opencv-3.1) branch. Many thanks to @victorhcm for the contributions!
+- OpenCV:
+[opencv3](https://www.learnopencv.com/install-opencv3-on-ubuntu/)
+[opencv4](https://www.learnopencv.com/install-opencv-4-on-ubuntu-16-04/)
 
 ### Install
 ```
-git clone --recursive http://github.com/yjxiong/dense_flow
+git clone git@gitlab.sz.sensetime.com:wangshiguang/dense_flow.git
 mkdir build && cd build
 cmake .. && make -j
 ```
 
 ### Usage
 ```
-./extract_gpu -f=test.avi -x=tmp/flow_x -y=tmp/flow_y -i=tmp/image -b=20 -t=1 -d=0 -s=1 -o=dir
+./build/extract_nvflow -v=test.avi -b=20 -a=tvl1 -s=1 -vv
 ```
-- `test.avi`: input video
+- `test.avi`: input video / videolist.txt
 - `tmp`: folder containing RGB images and optical flow images
-- `dir`: output generated images to folder. if set to `zip`, will write images to zip files instead.
-
-### Warp Flow
-The warp optical flow is used in the following paper
+- `dir`: output generated images to folder.
+- `tvl1`: optical flow algorithm
+- `vv`: verbose
+- `256`: short length of boarder
 
 ```
 @inproceedings{TSN2016ECCV,
@@ -38,9 +36,4 @@ The warp optical flow is used in the following paper
   booktitle   = {ECCV},
   year      = {2016},
 }
-```
-
-To extract warp flow, use the command
-```
-./extract_warp_gpu -f test.avi -x tmp/flow_x -y tmp/flow_y -i tmp/image -b 20 -t 1 -d 0 -s 1 -o dir
 ```

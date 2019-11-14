@@ -1,8 +1,5 @@
-//
-// Created by yjxiong on 11/18/15.
-//
-
 #include "common.h"
+#include "utils.h"
 
 void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &img_y, double lowerBound,
                         double higherBound) {
@@ -24,7 +21,7 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &
     Mat flow_img_y(flow_map_y.size(), CV_8UC1);
 
     convertFlowToImage(flow_map_x, flow_map_y, flow_img_x, flow_img_y, -bound, bound);
-
+    
     if (to_jpg) {
         imencode(".jpg", flow_img_x, encoded_x);
         imencode(".jpg", flow_img_y, encoded_y);
@@ -63,4 +60,35 @@ void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int
         fwrite(images[i].data(), 1, images[i].size(), fp);
         fclose(fp);
     }
+}
+
+void writeHDF5(const vector<Mat>& images, string name_prefix, string phase, const int step, const int start) {
+    char h5_ext[256];
+    if (step > 1) {
+        sprintf(h5_ext, "_p%d.h5", step);
+    } else if (step < 0) {
+        sprintf(h5_ext, "_m%d.h5", -step);
+    } else {
+        sprintf(h5_ext, ".h5");
+    }
+    string h5_file = name_prefix+h5_ext;
+    hid_t file_id = H5Fopen(h5_file.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+    int base = step > 0 ? 0 : -step;
+    for (int i = 0; i < images.size(); ++i) {
+        char tmp[256];
+        if (step > 1) {
+            sprintf(tmp, "_p%d_%05d.jpg", step, start + i + base);
+        } else if (step < 0) {
+            sprintf(tmp, "_m%d_%05d.jpg", -step, start + i + base);
+        } else {
+            sprintf(tmp, "_%05d.jpg", start + i + base);
+        }
+        string flow_dataset = "/" + phase + tmp;
+        // no group
+        hdf5_save_nd_dataset(file_id, flow_dataset, images[i]);
+    }
+    herr_t status = H5Fclose(file_id);
+    if (status <0)
+        throw std::runtime_error("Failed to save hdf5 file: "+h5_file);
+
 }
