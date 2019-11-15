@@ -54,6 +54,5 @@ configure_file(
     "${PROJECT_BINARY_DIR}/config.h"
 )
 
-
 add_executable(extract_nvflow tools/extract_nv_flow_video_gpu.cpp)
 target_link_libraries(extract_nvflow ${DenseFlow_LIB})
