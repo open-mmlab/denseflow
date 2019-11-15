@@ -37,10 +37,19 @@ bool DenseFlow::check_param() {
     return true;
 }
 
-bool DenseFlow::get_new_size(const VideoCapture& video_stream, Size &new_size, int& frames_num) {
-    int width = video_stream.get(cv::CAP_PROP_FRAME_WIDTH);
-    int height = video_stream.get(cv::CAP_PROP_FRAME_HEIGHT);
-    frames_num = video_stream.get(cv::CAP_PROP_FRAME_COUNT);
+bool DenseFlow::get_new_size(const VideoCapture& video_stream, const vector<path>& frames_path, bool use_frames, 
+                        Size &new_size, int& frames_num) {
+    int width, height;
+    if (use_frames) {
+        Mat src = imread(frames_path[0].string());
+        width = src.size().width;
+        height = src.size().height;
+        frames_num = frames_path.size();
+    } else {
+        width = video_stream.get(cv::CAP_PROP_FRAME_WIDTH);
+        height = video_stream.get(cv::CAP_PROP_FRAME_HEIGHT);
+        frames_num = video_stream.get(cv::CAP_PROP_FRAME_COUNT);
+    }
     // check resize
     bool do_resize = true;
     if (new_width > 0 && new_height > 0) {
@@ -70,7 +79,7 @@ void DenseFlow::extract_frames_video(VideoCapture& video_stream, bool do_resize,
     int video_frame_idx = 0;
     while(true) {        
         vector<Mat> frames_gray;
-        bool is_open = load_frames_batch(video_stream, frames_gray, do_resize, size);
+        bool is_open = load_frames_batch(video_stream, vector<path>(), false, frames_gray, do_resize, size, false);
         vector<vector<uchar>> output_img;
         int N = frames_gray.size();
         for (size_t i=0; i<N; i++) {
@@ -82,7 +91,7 @@ void DenseFlow::extract_frames_video(VideoCapture& video_stream, bool do_resize,
         if(!is_open) {
             break;
         }
-        video_frame_idx ++;
+        video_frame_idx += N;
     }
 }
 
@@ -95,24 +104,35 @@ void DenseFlow::extract_frames_only(bool verbose) {
             throw std::runtime_error("cannot open video_path stream:" + video_path.string());
         Size size;
         int frames_num;
-        bool do_resize = get_new_size(video_stream, size, frames_num);
+        bool do_resize = get_new_size(video_stream, vector<path>(), false, size, frames_num);
         extract_frames_video(video_stream, do_resize, size, output_dir, false);
+        total_frames += frames_num;
         video_stream.release();
         if (verbose)
             cout << "extract frames done video: " << video_path << endl;
     }
 }
 
-bool DenseFlow::load_frames_batch(VideoCapture& video_stream, vector<Mat>& frames_gray, bool do_resize, const Size& size) {
+bool DenseFlow::load_frames_batch(VideoCapture& video_stream, const vector<path>& frames_path, bool use_frames,
+    vector<Mat>& frames_gray, bool do_resize, const Size& size, bool to_gray) {
     Mat capture_frame;
     int cnt = 0;
     while (cnt<batch_maxsize) {
-        video_stream >> capture_frame;
-        if (capture_frame.empty()) {
-            return false;
+        if (use_frames) {
+            capture_frame = imread(frames_path[cnt].string(), IMREAD_COLOR);
+            if (cnt == frames_path.size())
+                return false;
+        } else {
+            video_stream >> capture_frame;
+            if (capture_frame.empty())
+                return false;
         }
+
         Mat frame_gray;
-        cvtColor(capture_frame, frame_gray, COLOR_BGR2GRAY);
+        if (to_gray)
+            cvtColor(capture_frame, frame_gray, COLOR_BGR2GRAY);
+        else
+            frame_gray = capture_frame.clone();
         if (do_resize) {
             Mat resized_frame_gray;
             resized_frame_gray.create(size, CV_8UC1);
@@ -126,11 +146,12 @@ bool DenseFlow::load_frames_batch(VideoCapture& video_stream, vector<Mat>& frame
     return true;
 }
 
-void DenseFlow::load_frames_video(VideoCapture& video_stream, bool do_resize, const Size& size, path output_dir, bool verbose) {
+void DenseFlow::load_frames_video(VideoCapture& video_stream, vector<path>& frames_path, bool use_frames,
+    bool do_resize, const Size& size, path output_dir, bool verbose) {
     int video_flow_idx = 0;
     while(true) {
         vector<Mat> frames_gray;
-        bool is_open = load_frames_batch(video_stream, frames_gray, do_resize, size);
+        bool is_open = load_frames_batch(video_stream, frames_path, use_frames, frames_gray, do_resize, size, true);
         FlowBuffer frames_gray_item(frames_gray, output_dir, video_flow_idx);
         unique_lock<mutex> lock(frames_gray_mtx);
         while(frames_gray_queue.size() == frames_gray_maxsize) {
@@ -148,11 +169,16 @@ void DenseFlow::load_frames_video(VideoCapture& video_stream, bool do_resize, co
             break;
         int M = frames_gray.size() - abs(step);
         video_flow_idx += M;    
-        video_stream.set(cv::CAP_PROP_POS_FRAMES, video_flow_idx);     
+        if (use_frames) {
+            frames_path.erase(frames_path.begin(), frames_path.begin()+M);
+        } else {
+            video_stream.set(cv::CAP_PROP_POS_FRAMES, video_flow_idx); 
+        }
+            
     }
 }
 
-void DenseFlow::load_frames(bool verbose) {
+void DenseFlow::load_frames(bool use_frames, bool verbose) {
     for (size_t i=0; i<video_paths.size(); i++) {
         path video_path = video_paths[i];
         path output_dir = output_dirs[i];
@@ -173,17 +199,37 @@ void DenseFlow::load_frames(bool verbose) {
         if (status <0)
             throw std::runtime_error("Failed to save hdf5 file: " + h5_file);
 #endif
-        VideoCapture video_stream(video_path.c_str());
-        if(!video_stream.isOpened()) 
-            throw std::runtime_error("cannot open video_path stream:" + video_path.string());
+        VideoCapture video_stream;
+        vector<path> frames_path;
+        if (use_frames) {
+            directory_iterator end_itr;
+            for (directory_iterator itr(video_path); itr != end_itr; ++itr) {
+                if (!boost::filesystem::is_regular_file(itr->status()) || itr->path().extension() != ".jpg")
+                    continue;
+                frames_path.push_back(itr->path());
+            }
+            if (frames_path.size() == 0) {
+                if (verbose)
+                    cout << video_path << " is empty!" << endl;
+                continue;
+            }
+            sort(frames_path.begin(), frames_path.end());
+        } else {
+            video_stream.open(video_path.c_str());
+            if(!video_stream.isOpened()) 
+                throw std::runtime_error("cannot open video_path stream:" + video_path.string());
+        }        
+
         Size size;
         int frames_num;
-        bool do_resize = get_new_size(video_stream, size, frames_num);
-        load_frames_video(video_stream, do_resize, size, output_dir, false);
+        bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
+        cout << video_path << ", frames appro: " << frames_num <<", real: "<<frames_path.size()<< endl;
         total_frames += frames_num; // approximately
-        video_stream.release();
+        load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, true);
+        if (!use_frames)
+            video_stream.release();
         if (verbose)
-            std::cout << "load done video: " << video_path << std::endl;
+            cout << "load done video: " << video_path << endl;
     }
     ready_to_exit1 = true;
     if (verbose)
@@ -352,9 +398,9 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
         }        
         flow_video_gpu.extract_frames_only(verbose);
     } else {
-        flow_video_gpu.launch(verbose);
+        flow_video_gpu.launch(use_frames, verbose);
     }
     double end_t = CurrentSeconds();
     unsigned long N = flow_video_gpu.get_prepared_total_frames();
-    cout << N << " files processed, using " << end_t-start_t <<" s, speed " << N / (end_t-start_t)<<"fps";    
+    cout << N << " files processed, using " << end_t-start_t <<" s, speed " << N / (end_t-start_t)<<"fps"<<endl;    
 }

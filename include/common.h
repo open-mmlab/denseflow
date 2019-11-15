@@ -27,6 +27,7 @@ using namespace cv;
 using namespace cv::cuda;
 using boost::filesystem::path;
 using boost::filesystem::create_directories;
+using boost::filesystem::directory_iterator;
 using boost::filesystem::exists;
 using boost::filesystem::is_directory;
 using std::string;

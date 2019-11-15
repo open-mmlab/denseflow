@@ -44,18 +44,22 @@ class DenseFlow {
 
         // meber functions
         bool check_param();
-        bool get_new_size(const VideoCapture& video_stream, Size &new_size, int& frames_num);
-        bool load_frames_batch(VideoCapture& video_stream, vector<Mat>& frames_gray, bool do_resize, const Size& size);
-        void load_frames_video(VideoCapture& video_stream, bool do_resize, const Size& size, path output_dir, bool verbose);
-        void calc_optflows_imp(const FlowBuffer& frames_gray, const string& algorithm, int step, bool verbose, Stream& stream = Stream::Null());
-        void load_frames(bool verbose=true);
+        bool get_new_size(const VideoCapture& video_stream, const vector<path>& frames_path, bool use_frames, 
+                                Size &new_size, int& frames_num);
+        bool load_frames_batch(VideoCapture& video_stream, const vector<path>& frames_path, bool use_frames,
+                                vector<Mat>& frames_gray, bool do_resize, const Size& size, bool to_gray);
+        void load_frames_video(VideoCapture& video_stream, vector<path>& frames_path, bool use_frames,
+                                bool do_resize, const Size& size, path output_dir, bool verbose);
+        void calc_optflows_imp(const FlowBuffer& frames_gray, const string& algorithm, int step,
+                                bool verbose, Stream& stream = Stream::Null());
+        void load_frames(bool use_frames, bool verbose=true);
         void calc_optflows(bool verbose=true);
         void encode_save(bool verbose=true);
         void extract_frames_video(VideoCapture& video_stream, bool do_resize, const Size& size, path output_dir, bool verbose);
 
     public:
-        static void load_frames_wrap(void* arg, bool verbose) {
-            return static_cast<DenseFlow *>(arg)->load_frames(verbose);
+        static void load_frames_wrap(void* arg, bool use_frames, bool verbose) {
+            return static_cast<DenseFlow *>(arg)->load_frames(use_frames, verbose);
         }
         static void calc_optflows_warp(void* arg, bool verbose) {
             return static_cast<DenseFlow *>(arg)->calc_optflows(verbose);
@@ -63,8 +67,8 @@ class DenseFlow {
         static void encode_save_warp(void* arg, bool verbose) {
             return static_cast<DenseFlow *>(arg)->encode_save(verbose);
         }
-        void launch(bool verbose) {
-            thread thread_load_frames(load_frames_wrap, this, verbose);
+        void launch(bool use_frames, bool verbose) {
+            thread thread_load_frames(load_frames_wrap, this, use_frames, verbose);
             thread thread_calc_optflow(calc_optflows_warp, this, false);
             thread thread_encode_save(encode_save_warp, this, false);
             thread_load_frames.join();
