@@ -24,7 +24,7 @@ double CurrentSeconds() {
                .count() /
            1000.0;
 }
-
+#if (USE_HDF5)
 void hdf5_save_nd_dataset(const hid_t file_id, const string& dataset_name, const cv::Mat& mat) {
     int num_axes = mat.channels() == 1 ? 2 : mat.channels();
     hsize_t *dims = new hsize_t[num_axes];
@@ -39,3 +39,4 @@ void hdf5_save_nd_dataset(const hid_t file_id, const string& dataset_name, const
     }
     delete[] dims;
 }
+#endif

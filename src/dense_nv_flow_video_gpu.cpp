@@ -119,7 +119,7 @@ void DenseFlow::load_frames(bool verbose) {
     for (size_t i=0; i<video_paths.size(); i++) {
         path video_path = video_paths[i];
         path output_dir = output_dirs[i];
-        
+#if (USE_HDF5)        
         // create h5
         char h5_ext[256];
         if (step > 1) {
@@ -136,7 +136,7 @@ void DenseFlow::load_frames(bool verbose) {
         herr_t status = H5Fclose(file_id);
         if (status <0)
             throw std::runtime_error("Failed to save hdf5 file: " + h5_file);
-
+#endif
         VideoCapture video_stream(video_path.c_str());
         if(!video_stream.isOpened()) 
             throw std::runtime_error("cannot open video_path stream:" + video_path.string());
@@ -265,8 +265,10 @@ void DenseFlow::encode_save(bool verbose) {
         // save
         writeFlowImages(output_x, (flow_buffer.output_dir / "flow_x").c_str(), step, flow_buffer.base_start);
         writeFlowImages(output_y, (flow_buffer.output_dir / "flow_y").c_str(), step, flow_buffer.base_start);
+#if (USE_HDF5)        
         writeHDF5(output_h5_x, flow_buffer.output_dir.c_str(), "flow_x", step, flow_buffer.base_start);
         writeHDF5(output_h5_y, flow_buffer.output_dir.c_str(), "flow_y", step, flow_buffer.base_start);
+#endif        
         if (!init) {
             record_tmp = flow_buffer.output_dir.stem().string();
             init = true;

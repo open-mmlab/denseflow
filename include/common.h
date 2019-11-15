@@ -1,15 +1,15 @@
 #ifndef DENSEFLOW_COMMON_H_H
 #define DENSEFLOW_COMMON_H_H
-
+#include "config.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/cuda.hpp>
-
-#include "hdf5.h"
-#include "hdf5_hl.h"
-
+#if (USE_HDF5)
+    #include "hdf5.h"
+    #include "hdf5_hl.h"
+#endif
 #include <boost/filesystem.hpp>
 #include <chrono>
 #include <fstream>
@@ -48,7 +48,7 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &
 void writeImages(vector<vector<uchar>> images, string name_prefix);
 
 void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int step = 1, const int start = 0);
-
+#if (USE_HDF5)
 void writeHDF5(const vector<Mat>& images, string name_prefix, string phase, const int step = 1, const int start = 0);
-
+#endif
 #endif // DENSEFLOW_COMMON_H_H

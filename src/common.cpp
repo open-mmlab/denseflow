@@ -62,6 +62,7 @@ void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int
     }
 }
 
+#if (USE_HDF5)
 void writeHDF5(const vector<Mat>& images, string name_prefix, string phase, const int step, const int start) {
     char h5_ext[256];
     if (step > 1) {
@@ -92,3 +93,4 @@ void writeHDF5(const vector<Mat>& images, string name_prefix, string phase, cons
         throw std::runtime_error("Failed to save hdf5 file: "+h5_file);
 
 }
+#endif
