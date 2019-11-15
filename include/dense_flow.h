@@ -50,6 +50,7 @@ class DenseFlow {
         void load_frames(bool verbose=true);
         void calc_optflows(bool verbose=true);
         void encode_save(bool verbose=true);
+        void extract_frames_video(VideoCapture& video_stream, bool do_resize, const Size& size, path output_dir, bool verbose);
 
     public:
         static void load_frames_wrap(void* arg, bool verbose) {
@@ -69,6 +70,7 @@ class DenseFlow {
             thread_calc_optflow.join();
             thread_encode_save.join();
         }
+        void extract_frames_only(bool verbose);
 
         DenseFlow (vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
                  int new_width, int new_height, int new_short, bool has_class):

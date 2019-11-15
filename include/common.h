@@ -45,7 +45,7 @@ void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &i
 void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &encoded_x, vector<uchar> &encoded_y,
                    int bound, bool to_jpg = true);
 
-void writeImages(vector<vector<uchar>> images, string name_prefix);
+void writeImages(vector<vector<uchar>> images, string name_prefix, const int start = 0);
 
 void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int step = 1, const int start = 0);
 #if (USE_HDF5)

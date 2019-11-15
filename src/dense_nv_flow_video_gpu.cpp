@@ -66,6 +66,43 @@ bool DenseFlow::get_new_size(const VideoCapture& video_stream, Size &new_size, i
     return do_resize;
 }
 
+void DenseFlow::extract_frames_video(VideoCapture& video_stream, bool do_resize, const Size& size, path output_dir, bool verbose) {
+    int video_frame_idx = 0;
+    while(true) {        
+        vector<Mat> frames_gray;
+        bool is_open = load_frames_batch(video_stream, frames_gray, do_resize, size);
+        vector<vector<uchar>> output_img;
+        int N = frames_gray.size();
+        for (size_t i=0; i<N; i++) {
+            vector<uchar> str_img;
+            imencode(".jpg", frames_gray[i], str_img);
+            output_img.push_back(str_img);
+        }
+        writeImages(output_img, (output_dir / "img").c_str(), video_frame_idx);
+        if(!is_open) {
+            break;
+        }
+        video_frame_idx ++;
+    }
+}
+
+void DenseFlow::extract_frames_only(bool verbose) {
+    for (size_t i=0; i<video_paths.size(); i++) {
+        path video_path = video_paths[i];
+        path output_dir = output_dirs[i];
+        VideoCapture video_stream(video_path.c_str());
+        if(!video_stream.isOpened()) 
+            throw std::runtime_error("cannot open video_path stream:" + video_path.string());
+        Size size;
+        int frames_num;
+        bool do_resize = get_new_size(video_stream, size, frames_num);
+        extract_frames_video(video_stream, do_resize, size, output_dir, false);
+        video_stream.release();
+        if (verbose)
+            cout << "extract frames done video: " << video_path << endl;
+    }
+}
+
 bool DenseFlow::load_frames_batch(VideoCapture& video_stream, vector<Mat>& frames_gray, bool do_resize, const Size& size) {
     Mat capture_frame;
     int cnt = 0;
@@ -130,7 +167,6 @@ void DenseFlow::load_frames(bool verbose) {
             sprintf(h5_ext, ".h5");
         }
         string h5_file = output_dir.string() + h5_ext;
-        cout << h5_file << endl;
         // overwrite if exists
         hid_t file_id = H5Fcreate(h5_file.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
         herr_t status = H5Fclose(file_id);
@@ -154,12 +190,21 @@ void DenseFlow::load_frames(bool verbose) {
 
 void DenseFlow::calc_optflows_imp(const FlowBuffer& frames_gray, const string& algorithm, int step,
     bool verbose, Stream& stream) {
-    Ptr<cuda::FarnebackOpticalFlow> alg_farn = cuda::FarnebackOpticalFlow::create();
-    Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
-    Ptr<cuda::BroxOpticalFlow> alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
+    Ptr<cuda::FarnebackOpticalFlow> alg_farn;
+    Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1;
+    Ptr<cuda::BroxOpticalFlow> alg_brox;
     // Ptr<NvidiaOpticalFlow_1_0> alg_nv = NvidiaOpticalFlow_1_0::create(
     //     size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, false, false,
-    //     false, dev_id); 
+    //     false, dev_id);
+    if (algorithm == "nv") {
+        // todo
+    } else if (algorithm == "tvl1") {
+        alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
+    } else if (algorithm == "farn") {
+        alg_farn = cuda::FarnebackOpticalFlow::create();
+    } else if (algorithm == "brox") {
+        alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
+    }
     int N = frames_gray.item_data.size();
     int M = N - abs(step);
     if (M <= 0)
@@ -294,5 +339,9 @@ void calcDenseNvFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs,
         int new_width, int new_height, int new_short, bool has_class, int dev_id, bool verbose) {
     setDevice(dev_id);
     DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short, has_class);
-    flow_video_gpu.launch(verbose);
+    if (step == 0) {
+        flow_video_gpu.extract_frames_only(verbose);
+    } else {
+        flow_video_gpu.launch(verbose);
+    }
 }

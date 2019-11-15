@@ -56,3 +56,12 @@ configure_file(
 
 add_executable(extract_nvflow tools/extract_nv_flow_video_gpu.cpp)
 target_link_libraries(extract_nvflow ${DenseFlow_LIB})
+
+install (
+    TARGETS extract_nvflow ${DenseFlow_LIB}
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+)
+install (
+    FILES extract.sh DESTINATION doc
+)
