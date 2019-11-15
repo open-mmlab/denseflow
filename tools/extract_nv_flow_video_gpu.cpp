@@ -15,6 +15,7 @@ int main(int argc, char **argv) {
                             "{ sh short       | 0                | short side length }"
                             "{ d deviceId     | 0                | set gpu id }"
                             "{ cf classFolder |                  | outputDir/class/video/flow.jpg }"
+                            "{ if inputFrames |                  | inputs are frames }"
                             "{ vv verbose     |                  | verbose }"
                             "{ help           |                  | print help message }"};
 
@@ -29,6 +30,7 @@ int main(int argc, char **argv) {
         int new_short = cmd.get<int>("short");
         int device_id = cmd.get<int>("deviceId");
         bool has_class = cmd.has("classFolder");
+        bool use_frames = cmd.has("inputFrames");
         bool verbose = cmd.has("verbose");
 
         cmd.about("GPU optical flow extraction.");
@@ -69,8 +71,8 @@ int main(int argc, char **argv) {
             video_paths.push_back(video_path);
             output_dirs.push_back(output_dir);
         }
-        calcDenseNvFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
-            has_class, device_id, verbose);
+        calcDenseFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
+            has_class, device_id, use_frames, verbose);
 
     } catch (const std::exception &ex) {
         std::cout << ex.what() << std::endl;

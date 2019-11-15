@@ -3,8 +3,8 @@
 
 #include "common.h"
 
-void calcDenseNvFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, 
-        int new_width, int new_height, int new_short, bool has_class, int dev_id, bool verbose);
+void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, 
+        int new_width, int new_height, int new_short, bool has_class, int dev_id, bool use_frames, bool verbose);
 
 class FlowBuffer {
     public:
@@ -40,6 +40,7 @@ class DenseFlow {
 
         queue<FlowBuffer> frames_gray_queue;
         queue<FlowBuffer> flows_queue;
+        unsigned long total_frames;
 
         // meber functions
         bool check_param();
@@ -71,6 +72,7 @@ class DenseFlow {
             thread_encode_save.join();
         }
         void extract_frames_only(bool verbose);
+        unsigned long get_prepared_total_frames() { return total_frames;}
 
         DenseFlow (vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
                  int new_width, int new_height, int new_short, bool has_class):
@@ -81,6 +83,7 @@ class DenseFlow {
             batch_maxsize = 128; // 512;
             frames_gray_maxsize = flows_maxsize = 3;
             ready_to_exit1 = ready_to_exit2 = ready_to_exit3 = false;
+            total_frames = 0;
     }
 };
 

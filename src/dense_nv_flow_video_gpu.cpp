@@ -180,12 +180,14 @@ void DenseFlow::load_frames(bool verbose) {
         int frames_num;
         bool do_resize = get_new_size(video_stream, size, frames_num);
         load_frames_video(video_stream, do_resize, size, output_dir, false);
+        total_frames += frames_num; // approximately
         video_stream.release();
         if (verbose)
             std::cout << "load done video: " << video_path << std::endl;
     }
     ready_to_exit1 = true;
-    cout << "load frames exit." << endl;
+    if (verbose)
+        cout << "load frames exit." << endl;
 }
 
 void DenseFlow::calc_optflows_imp(const FlowBuffer& frames_gray, const string& algorithm, int step,
@@ -270,7 +272,8 @@ void DenseFlow::calc_optflows(bool verbose) {
         if (ready_to_exit2) 
             break;
     }
-    cout << "calc optflows exit." << endl;
+    if(verbose)
+        cout << "calc optflows exit." << endl;
 }
 
 void DenseFlow::encode_save(bool verbose) {
@@ -327,21 +330,31 @@ void DenseFlow::encode_save(bool verbose) {
                 donedir = flow_buffer.output_dir.parent_path() / ".done";
             path donefile = donedir / record_tmp;
             createFile(donefile);
+            cout << "approximately done: " << donefile << endl;
             record_tmp = flow_buffer.output_dir.stem().string();
         } 
         if (ready_to_exit3)
             break;
     }
-    std::cout << "post process exit." << std::endl;
+    if (verbose)
+        cout << "post process exit." << endl;
 }
 
-void calcDenseNvFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, 
-        int new_width, int new_height, int new_short, bool has_class, int dev_id, bool verbose) {
+void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, 
+        int new_width, int new_height, int new_short, bool has_class, int dev_id, bool use_frames, bool verbose) {
     setDevice(dev_id);
     DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short, has_class);
+    double start_t = CurrentSeconds();
     if (step == 0) {
+        if (use_frames) {
+            cout << "step can not equal to 0, when use_frames" << endl;
+            return;
+        }        
         flow_video_gpu.extract_frames_only(verbose);
     } else {
         flow_video_gpu.launch(verbose);
     }
+    double end_t = CurrentSeconds();
+    unsigned long N = flow_video_gpu.get_prepared_total_frames();
+    cout << N << " files processed, using " << end_t-start_t <<" s, speed " << N / (end_t-start_t)<<"fps";    
 }
