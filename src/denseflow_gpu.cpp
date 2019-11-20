@@ -75,17 +75,17 @@ bool DenseFlow::get_new_size(const VideoCapture &video_stream, const vector<path
     return do_resize;
 }
 
-void DenseFlow::extract_frames_video(VideoCapture &video_stream, bool do_resize, const Size &size, path output_dir,
-                                     bool verbose) {
+void DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, 
+                    bool do_resize, const Size &size, path output_dir, bool verbose) {
     int video_frame_idx = 0;
     while (true) {
-        vector<Mat> frames_gray;
-        bool is_open = load_frames_batch(video_stream, vector<path>(), false, frames_gray, do_resize, size, false);
+        vector<Mat> frames_color;
+        bool is_open = load_frames_batch(video_stream, frames_path, use_frames, frames_color, do_resize, size, false);
         vector<vector<uchar>> output_img;
-        int N = frames_gray.size();
+        int N = frames_color.size();
         for (size_t i = 0; i < N; i++) {
             vector<uchar> str_img;
-            imencode(".jpg", frames_gray[i], str_img);
+            imencode(".jpg", frames_color[i], str_img);
             output_img.push_back(str_img);
         }
         writeImages(output_img, (output_dir / "img").c_str(), video_frame_idx);
@@ -93,22 +93,48 @@ void DenseFlow::extract_frames_video(VideoCapture &video_stream, bool do_resize,
             break;
         }
         video_frame_idx += N;
+        if (use_frames) {
+            frames_path.erase(frames_path.begin(), frames_path.begin() + N);
+        } else {
+            video_stream.set(cv::CAP_PROP_POS_FRAMES, video_frame_idx);
+        }        
     }
 }
 
-void DenseFlow::extract_frames_only(bool verbose) {
+void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
     for (size_t i = 0; i < video_paths.size(); i++) {
         path video_path = video_paths[i];
-        path output_dir = output_dirs[i];
-        VideoCapture video_stream(video_path.c_str());
-        if (!video_stream.isOpened())
-            throw std::runtime_error("cannot open video_path stream:" + video_path.string());
+        path output_dir = output_dirs[i];        
+        VideoCapture video_stream;
+        vector<path> frames_path;
+        if (use_frames) {
+            directory_iterator end_itr;
+            for (directory_iterator itr(video_path); itr != end_itr; ++itr) {
+                if (!boost::filesystem::is_regular_file(itr->status()) || itr->path().extension() != ".jpg")
+                    continue;
+                frames_path.push_back(itr->path());
+            }
+            if (frames_path.size() == 0) {
+                if (verbose)
+                    cout << video_path << " is empty!" << endl;
+                continue;
+            }
+            sort(frames_path.begin(), frames_path.end());
+        } else {
+            video_stream.open(video_path.c_str());
+            if (!video_stream.isOpened())
+                throw std::runtime_error("cannot open video_path stream:" + video_path.string());
+        }
+
         Size size;
         int frames_num;
-        bool do_resize = get_new_size(video_stream, vector<path>(), false, size, frames_num);
-        extract_frames_video(video_stream, do_resize, size, output_dir, false);
+        bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
+        if (verbose)
+            cout << video_path << ", frames appro: " << frames_num << endl;
+        extract_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, false);
         total_frames += frames_num;
-        video_stream.release();
+        if (!use_frames)
+            video_stream.release();
         if (verbose)
             cout << "extract frames done video: " << video_path << endl;
     }
@@ -148,7 +174,7 @@ bool DenseFlow::load_frames_batch(VideoCapture &video_stream, const vector<path>
 }
 
 void DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames,
-                                  bool do_resize, const Size &size, path output_dir, bool verbose) {
+                                  bool do_resize, const Size &size, path output_dir, bool is_last, bool verbose) {
     int video_flow_idx = 0;
     while (true) {
         vector<Mat> frames_gray;
@@ -165,6 +191,8 @@ void DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &fram
             cout << "push frames gray, video_flow_idx: " << video_flow_idx << ", batch_size: " << frames_gray.size()
                  << endl;
         cond_frames_gray_consume.notify_all();
+        if (is_last && !is_open)
+            ready_to_exit1 = true;
         lock.unlock();
         // read done a video
         if (!is_open)
@@ -224,15 +252,15 @@ void DenseFlow::load_frames(bool use_frames, bool verbose) {
         Size size;
         int frames_num;
         bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
-        cout << video_path << ", frames appro: " << frames_num << ", real: " << frames_path.size() << endl;
+        if (verbose)
+            cout << video_path << ", frames appro: " << frames_num << endl;
         total_frames += frames_num; // approximately
-        load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, true);
+        load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, i==video_paths.size()-1, true);
         if (!use_frames)
             video_stream.release();
         if (verbose)
             cout << "load done video: " << video_path << endl;
     }
-    ready_to_exit1 = true;
     if (verbose)
         cout << "load frames exit." << endl;
 }
@@ -381,24 +409,24 @@ void DenseFlow::encode_save(bool verbose) {
             init = true;
         }
         // record, the last batch in a video (approximately)
-        if ((M + abs(step) < batch_maxsize) ||
-            ((M + abs(step) == batch_maxsize) && record_tmp != flow_buffer.output_dir.stem().string())) {
-            path donedir;
-            if (has_class)
-                donedir = flow_buffer.output_dir.parent_path().parent_path() / ".done" /
-                          flow_buffer.output_dir.parent_path().filename();
-            else
-                donedir = flow_buffer.output_dir.parent_path() / ".done";
-            path donefile = donedir / record_tmp;
-            createFile(donefile);
-            cout << "approximately done: " << donefile << endl;
-            record_tmp = flow_buffer.output_dir.stem().string();
+        if (is_record) {
+            if ((M + abs(step) < batch_maxsize) ||
+                ((M + abs(step) == batch_maxsize) && record_tmp != flow_buffer.output_dir.stem().string())) {
+                path donedir;
+                if (has_class)
+                    donedir = flow_buffer.output_dir.parent_path().parent_path() / ".done" /
+                            flow_buffer.output_dir.parent_path().filename();
+                else
+                    donedir = flow_buffer.output_dir.parent_path() / ".done";
+                path donefile = donedir / record_tmp;
+                createFile(donefile);
+                cout << "approximately done: " << donefile << endl;
+                record_tmp = flow_buffer.output_dir.stem().string();
+            }
         }
-        cout << "." << ready_to_exit1 << ready_to_exit2 << ready_to_exit3 << endl;
+
         if (ready_to_exit3)
             break;
-        else
-            std::this_thread::yield();
     }
     if (verbose)
         cout << "post process exit." << endl;
@@ -412,11 +440,7 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
                              has_class);
     double start_t = CurrentSeconds();
     if (step == 0) {
-        if (use_frames) {
-            cout << "step can not equal to 0, when use_frames" << endl;
-            return;
-        }
-        flow_video_gpu.extract_frames_only(verbose);
+        flow_video_gpu.extract_frames_only(use_frames, verbose);
     } else {
         flow_video_gpu.launch(use_frames, verbose);
     }

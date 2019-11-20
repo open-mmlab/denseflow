@@ -26,6 +26,7 @@ class DenseFlow {
         int new_height;
         int new_short;
         bool has_class;
+        bool is_record;
         Stream stream;
 
         mutex frames_gray_mtx, flows_mtx;
@@ -49,13 +50,14 @@ class DenseFlow {
         bool load_frames_batch(VideoCapture& video_stream, const vector<path>& frames_path, bool use_frames,
                                 vector<Mat>& frames_gray, bool do_resize, const Size& size, bool to_gray);
         void load_frames_video(VideoCapture& video_stream, vector<path>& frames_path, bool use_frames,
-                                bool do_resize, const Size& size, path output_dir, bool verbose);
+                                bool do_resize, const Size& size, path output_dir, bool is_last, bool verbose);
         void calc_optflows_imp(const FlowBuffer& frames_gray, const string& algorithm, int step,
                                 bool verbose, Stream& stream = Stream::Null());
         void load_frames(bool use_frames, bool verbose=true);
         void calc_optflows(bool verbose=true);
         void encode_save(bool verbose=true);
-        void extract_frames_video(VideoCapture& video_stream, bool do_resize, const Size& size, path output_dir, bool verbose);
+        void extract_frames_video(VideoCapture& video_stream, vector<path> &frames_path, bool use_frames,
+                    bool do_resize, const Size& size, path output_dir, bool verbose);
 
     public:
         static void load_frames_wrap(void* arg, bool use_frames, bool verbose) {
@@ -75,7 +77,7 @@ class DenseFlow {
             thread_calc_optflow.join();
             thread_encode_save.join();
         }
-        void extract_frames_only(bool verbose);
+        void extract_frames_only(bool use_frames, bool verbose);
         unsigned long get_prepared_total_frames() { return total_frames;}
 
         DenseFlow (vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
@@ -88,6 +90,7 @@ class DenseFlow {
             frames_gray_maxsize = flows_maxsize = 3;
             ready_to_exit1 = ready_to_exit2 = ready_to_exit3 = false;
             total_frames = 0;
+            is_record = video_paths.size() > 1 ? true : false;
     }
 };
 
