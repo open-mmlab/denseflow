@@ -21,7 +21,7 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &
     Mat flow_img_y(flow_map_y.size(), CV_8UC1);
 
     convertFlowToImage(flow_map_x, flow_map_y, flow_img_x, flow_img_y, -bound, bound);
-    
+
     if (to_jpg) {
         imencode(".jpg", flow_img_x, encoded_x);
         imencode(".jpg", flow_img_y, encoded_y);
@@ -36,7 +36,7 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &
 void writeImages(vector<vector<uchar>> images, string name_prefix, const int start) {
     for (int i = 0; i < images.size(); ++i) {
         char tmp[256];
-        sprintf(tmp, "_%05d.jpg", start+i);
+        sprintf(tmp, "_%05d.jpg", start + i);
         FILE *fp;
         fp = fopen((name_prefix + tmp).c_str(), "wb");
         fwrite(images[i].data(), 1, images[i].size(), fp);
@@ -63,7 +63,7 @@ void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int
 }
 
 #if (USE_HDF5)
-void writeHDF5(const vector<Mat>& images, string name_prefix, string phase, const int step, const int start) {
+void writeHDF5(const vector<Mat> &images, string name_prefix, string phase, const int step, const int start) {
     char h5_ext[256];
     if (step > 1) {
         sprintf(h5_ext, "_p%d.h5", step);
@@ -72,7 +72,7 @@ void writeHDF5(const vector<Mat>& images, string name_prefix, string phase, cons
     } else {
         sprintf(h5_ext, ".h5");
     }
-    string h5_file = name_prefix+h5_ext;
+    string h5_file = name_prefix + h5_ext;
     hid_t file_id = H5Fopen(h5_file.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
     int base = step > 0 ? 0 : -step;
     for (int i = 0; i < images.size(); ++i) {
@@ -89,8 +89,7 @@ void writeHDF5(const vector<Mat>& images, string name_prefix, string phase, cons
         hdf5_save_nd_dataset(file_id, flow_dataset, images[i]);
     }
     herr_t status = H5Fclose(file_id);
-    if (status <0)
-        throw std::runtime_error("Failed to save hdf5 file: "+h5_file);
-
+    if (status < 0)
+        throw std::runtime_error("Failed to save hdf5 file: " + h5_file);
 }
 #endif

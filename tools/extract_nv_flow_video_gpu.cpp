@@ -64,15 +64,15 @@ int main(int argc, char **argv) {
                     donedir = output_dir / ".done" / vidfile.parent_path().filename();
                 } else {
                     donedir = output_dir / ".done";
-                }                
-                create_directories(donedir);                
+                }
+                create_directories(donedir);
             }
         } else {
             video_paths.push_back(video_path);
             output_dirs.push_back(output_dir);
         }
         calcDenseFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
-            has_class, device_id, use_frames, verbose);
+                              has_class, device_id, use_frames, verbose);
 
     } catch (const std::exception &ex) {
         std::cout << ex.what() << std::endl;

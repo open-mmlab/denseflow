@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 project(DenseFlow)
 
-option(USE_HDF5 "Whether to build hdf5 for optical flow image saving" ON)
+option(USE_HDF5 "Whether to build hdf5 for optical flow image saving" OFF)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -15,7 +15,7 @@ else()
 endif()
 
 find_package(CUDA REQUIRED)
-find_package( OpenCV REQUIRED)
+find_package(OpenCV REQUIRED)
 
 set(DenseFlow_LIB denseflow)
 
@@ -46,7 +46,7 @@ if (USE_HDF5)
     include_directories(${HDF5_INCLUDE_DIRS} ${HDF5_HL_INCLUDE_DIR})
     target_link_libraries(${DenseFlow_LIB} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 else()
-    set(HDF5_DEFINITION 0) 
+    set(HDF5_DEFINITION 0)
 endif()
 
 configure_file(
@@ -62,6 +62,7 @@ install (
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
 )
+
 install (
     FILES extract.sh DESTINATION doc
 )
