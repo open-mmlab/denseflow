@@ -246,7 +246,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     //     size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, false, false,
     //     false, dev_id);
     if (algorithm == "nv") {
-        // todo
+        throw std::runtime_error("NV hardware flow not implemented");
     } else if (algorithm == "tvl1") {
         alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
     } else if (algorithm == "farn") {
@@ -318,6 +318,8 @@ void DenseFlow::calc_optflows(bool verbose) {
         calc_optflows_imp(frames_gray, algorithm, step, false, stream);
         if (ready_to_exit2)
             break;
+        else
+            std::this_thread::yield();
     }
     if (verbose)
         cout << "calc optflows exit." << endl;
@@ -382,8 +384,11 @@ void DenseFlow::encode_save(bool verbose) {
             cout << "approximately done: " << donefile << endl;
             record_tmp = flow_buffer.output_dir.stem().string();
         }
+        cout << "." << ready_to_exit1 << ready_to_exit2 << ready_to_exit3 << endl;
         if (ready_to_exit3)
             break;
+        else
+            std::this_thread::yield();
     }
     if (verbose)
         cout << "post process exit." << endl;
