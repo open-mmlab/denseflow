@@ -31,7 +31,7 @@ message(STATUS "    version: ${Boost_VERSION}")
 message(STATUS "    libraries: ${Boost_LIBRARIES}")
 message(STATUS "    include path: ${Boost_INCLUDE_DIRS}")
 
-add_library(${DenseFlow_LIB} src/common.cpp src/utils.cpp src/dense_nv_flow_video_gpu.cpp)
+add_library(${DenseFlow_LIB} src/common.cpp src/utils.cpp src/denseflow_gpu.cpp)
 include_directories(${OpenCV_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS} include ${PROJECT_BINARY_DIR})
 link_directories(${OpenCV_LIB_DIRS})
 target_link_libraries(${DenseFlow_LIB} ${OpenCV_LIBS} Boost::filesystem ${Boost_LIBRARIES} pthread)
@@ -54,7 +54,7 @@ configure_file(
     "${PROJECT_BINARY_DIR}/config.h"
 )
 
-add_executable(denseflow tools/extract_nv_flow_video_gpu.cpp)
+add_executable(denseflow tools/denseflow.cpp)
 target_link_libraries(denseflow ${DenseFlow_LIB})
 
 install (
