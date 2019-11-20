@@ -251,7 +251,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
                                                NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW,
                                                false, false, false, dev_id);
 #else
-        throw std::runtime_error("NV hardware flow not implemented");
+        throw std::runtime_error("NV hardware flow not enables, pls recompile");
 #endif
     } else if (algorithm == "tvl1") {
         alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
@@ -277,8 +277,6 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
 #if (USE_NVFLOW)
             alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
             alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
-#else
-            throw std::runtime_error("NV hardware flow not implemented");
 #endif
         } else {
             if (algorithm == "tvl1") {
