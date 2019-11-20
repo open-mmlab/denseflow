@@ -9,28 +9,28 @@
 bool DenseFlow::check_param() {
     for (int i = 0; i < video_paths.size(); i++) {
         if (!exists(video_paths[i])) {
-            cout << video_paths[i] << " does not exist!";
+            cout << video_paths[i] << " does not exist!" << endl;
             return false;
         }
         if (!is_directory(output_dirs[i])) {
-            cout << output_dirs[i] << " is not a valid dir!";
+            cout << output_dirs[i] << " is not a valid dir!" << endl;
             return false;
         }
     }
     if (algorithm != "nv" && algorithm != "tvl1" && algorithm != "farn" && algorithm != "brox") {
-        cout << algorithm << " not supported!";
+        cout << algorithm << " not supported!" << endl;
         return false;
     }
     if (bound <= 0) {
-        cout << "bound should > 0!";
+        cout << "bound should > 0!" << endl;
         return false;
     }
     if (new_height < 0 || new_width < 0 || new_short < 0) {
-        cout << "height and width cannot < 0!";
+        cout << "height and width cannot < 0!" << endl;
         return false;
     }
     if (new_short > 0 && new_height + new_width != 0) {
-        cout << "do not set height and width when set short!";
+        cout << "do not set height and width when set short!" << endl;
         return false;
     }
 
@@ -407,6 +407,5 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
     }
     double end_t = CurrentSeconds();
     unsigned long N = flow_video_gpu.get_prepared_total_frames();
-    cout << N << " files processed, using " << end_t - start_t << " s, speed " << N / (end_t - start_t) << "fps"
-         << endl;
+    cout << N << " files processed, using " << end_t - start_t << "s, speed " << N / (end_t - start_t) << "fps" << endl;
 }

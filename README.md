@@ -1,22 +1,28 @@
 Extracting dense flow field given a video.
 
 #### Dependencies:
+
 - OpenCV:
-[opencv3](https://www.learnopencv.com/install-opencv3-on-ubuntu/)
+[opencv3](https://www.learnopencv.com/install-opencv3-on-ubuntu/) |
 [opencv4](https://www.learnopencv.com/install-opencv-4-on-ubuntu-16-04/)
+- CUDA
+- Boost
+- HDF5 (Optional)
 
 ### Install
 
 ```bash
 git clone git@gitlab.sz.sensetime.com:wangshiguang/dense_flow.git
 mkdir build && cd build
-cmake .. && make -j
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/app ..
+make -j
+make install
 ```
 
 ### Usage
 
 ```bash
-./build/extract_nvflow -v=test.avi -b=20 -a=tvl1 -s=1 -vv
+./build/denseflow -v=test.avi -b=20 -a=tvl1 -s=1 -vv
 ```
 
 - `test.avi`: input video / videolist.txt
