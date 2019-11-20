@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 project(DenseFlow)
 
 option(USE_HDF5 "Whether to build hdf5 for optical flow image saving" OFF)
+option(USE_NVFLOW "Whether to use nvidia hardware optical flow" OFF)
 
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -47,6 +48,12 @@ if (USE_HDF5)
     target_link_libraries(${DenseFlow_LIB} ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 else()
     set(HDF5_DEFINITION 0)
+endif()
+
+if (USE_NVFLOW)
+    set(NVFLOW_DEFINITION 1)
+else()
+    set(NVFLOW_DEFINITION 0)
 endif()
 
 configure_file(

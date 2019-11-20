@@ -242,11 +242,17 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     Ptr<cuda::FarnebackOpticalFlow> alg_farn;
     Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1;
     Ptr<cuda::BroxOpticalFlow> alg_brox;
-    // Ptr<NvidiaOpticalFlow_1_0> alg_nv = NvidiaOpticalFlow_1_0::create(
-    //     size.width, size.height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW, false, false,
-    //     false, dev_id);
+#if (USE_NVFLOW)
+    Ptr<NvidiaOpticalFlow_1_0> alg_nv;
+#endif
     if (algorithm == "nv") {
+#if (USE_NVFLOW)
+        alg_nv = NvidiaOpticalFlow_1_0::create(size.width, size.height,
+                                               NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW,
+                                               false, false, false, dev_id);
+#else
         throw std::runtime_error("NV hardware flow not implemented");
+#endif
     } else if (algorithm == "tvl1") {
         alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
     } else if (algorithm == "farn") {
@@ -268,8 +274,12 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
         gray_a.upload(frames_gray.item_data[a], stream);
         gray_b.upload(frames_gray.item_data[b], stream);
         if (algorithm == "nv") {
-            // alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
-            // alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
+#if (USE_NVFLOW)
+            alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
+            alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
+#else
+            throw std::runtime_error("NV hardware flow not implemented");
+#endif
         } else {
             if (algorithm == "tvl1") {
                 alg_tvl1->calc(gray_a, gray_b, flow_gpu, stream);
