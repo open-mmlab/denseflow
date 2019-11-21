@@ -6,3 +6,5 @@ out/
 imgs/
 test/
 extract*
+log/
+logs/
