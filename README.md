@@ -1,4 +1,18 @@
+# Denseflow
+
 Extracting dense flow field given a video.
+
+### Features
+
+- support multiple optical flow algorithms
+- support single video (or a frame folder) / a list of videos (or a list of frame folders) as input
+- support multiple output types (image, hdf5)
+- faster, 40% faster (by parallelize IO & computation)
+- record the progress when extract a list of videos (Note: restart from the recent "done video",
+  that is, the recent "approximately done video" may not actually done)
+
+
+### Install
 
 #### Dependencies:
 
@@ -8,17 +22,6 @@ Extracting dense flow field given a video.
 - CUDA (driver version > 400)
 - Boost
 - HDF5 (Optional)
-
-### Characteristic
-- support multiple optical flow algorithms
-- support single video(frame folder) / a list of videos(frame folders) as input
-- support multiple output types (image, hdf5)
-- faster, 40% faster (mutiple threads)
-- record the progress when extract a list of videos (Note: restart from the recent "done video", 
-  that is, the recent "approximately done video" may not actually done)
-
-
-### Install
 
 ```bash
 git clone git@gitlab.sz.sensetime.com:wangshiguang/dense_flow.git
