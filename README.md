@@ -24,7 +24,7 @@ Extracting dense flow field given a video.
 - HDF5 (Optional)
 
 ```bash
-git clone git@gitlab.sz.sensetime.com:wangshiguang/dense_flow.git
+git clone https://github.com/innerlee/denseflow
 mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=$HOME/app ..
 make -j
@@ -36,7 +36,7 @@ make install
 #### Extract optical flow of a single video
 
 ```bash
-./build/denseflow test.avi -b=20 -a=tvl1 -s=1 -v
+denseflow test.avi -b=20 -a=tvl1 -s=1 -v
 ```
 
 - `test.avi`: input video / videolist.txt
@@ -53,7 +53,7 @@ make install
 * input image
 
 ```bash
-./build/denseflow videolist.txt -b=20 -a=tvl1 -s=1 -v
+denseflow videolist.txt -b=20 -a=tvl1 -s=1 -v
 ```
 
 - `videolist.txt`: input video / videolist.txt
@@ -62,3 +62,11 @@ make install
 - `tvl1`: optical flow algorithm
 - `v`: verbose
 - `s`: step, extract frames only when step=0
+
+### Credits
+
+Modified based on [yuanjun's fork of dense_flow](https://github.com/yjxiong/dense_flow).
+
+#### Main Authors:
+
+Shiguang Wang, Zhizhong Li
