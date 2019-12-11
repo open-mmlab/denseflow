@@ -131,7 +131,7 @@ void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
         bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
         if (verbose)
             cout << video_path << ", frames appro: " << frames_num << endl;
-        extract_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, false);
+        extract_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, verbose);
         total_frames += frames_num;
         if (!use_frames)
             video_stream.release();
@@ -256,7 +256,7 @@ void DenseFlow::load_frames(bool use_frames, bool verbose) {
             cout << video_path << ", frames appro: " << frames_num << endl;
         total_frames += frames_num; // approximately
         load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir,
-                          i == video_paths.size() - 1, true);
+                          i == video_paths.size() - 1, verbose);
         if (!use_frames)
             video_stream.release();
         if (verbose)
