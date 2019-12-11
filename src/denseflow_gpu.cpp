@@ -75,8 +75,8 @@ bool DenseFlow::get_new_size(const VideoCapture &video_stream, const vector<path
     return do_resize;
 }
 
-void DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, 
-                    bool do_resize, const Size &size, path output_dir, bool verbose) {
+void DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames,
+                                     bool do_resize, const Size &size, path output_dir, bool verbose) {
     int video_frame_idx = 0;
     while (true) {
         vector<Mat> frames_color;
@@ -97,14 +97,14 @@ void DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &f
             frames_path.erase(frames_path.begin(), frames_path.begin() + N);
         } else {
             video_stream.set(cv::CAP_PROP_POS_FRAMES, video_frame_idx);
-        }        
+        }
     }
 }
 
 void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
     for (size_t i = 0; i < video_paths.size(); i++) {
         path video_path = video_paths[i];
-        path output_dir = output_dirs[i];        
+        path output_dir = output_dirs[i];
         VideoCapture video_stream;
         vector<path> frames_path;
         if (use_frames) {
@@ -255,7 +255,8 @@ void DenseFlow::load_frames(bool use_frames, bool verbose) {
         if (verbose)
             cout << video_path << ", frames appro: " << frames_num << endl;
         total_frames += frames_num; // approximately
-        load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, i==video_paths.size()-1, true);
+        load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir,
+                          i == video_paths.size() - 1, true);
         if (!use_frames)
             video_stream.release();
         if (verbose)
@@ -413,7 +414,7 @@ void DenseFlow::encode_save(bool verbose) {
                 path donedir;
                 if (has_class)
                     donedir = flow_buffer.output_dir.parent_path().parent_path() / ".done" /
-                            flow_buffer.output_dir.parent_path().filename();
+                              flow_buffer.output_dir.parent_path().filename();
                 else
                     donedir = flow_buffer.output_dir.parent_path() / ".done";
                 path donefile = donedir / record_tmp;

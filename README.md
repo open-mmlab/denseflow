@@ -4,7 +4,7 @@ Extracting dense flow field given a video.
 
 ### Features
 
-- support multiple optical flow algorithms
+- support multiple optical flow algorithms, including Nvidia hardware optical flow
 - support single video (or a frame folder) / a list of videos (or a list of frame folders) as input
 - support multiple output types (image, hdf5)
 - faster, 40% faster (by parallelize IO & computation)
