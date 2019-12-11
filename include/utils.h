@@ -19,6 +19,6 @@ inline bool dirExists(const string &path) {
     return stat(path.c_str(), &info) == 0 && (info.st_mode & S_IFDIR);
 }
 #if (USE_HDF5)
-void hdf5_save_nd_dataset(const hid_t file_id, const string& dataset_name, const Mat& mat);
+void hdf5_save_nd_dataset(const hid_t file_id, const string &dataset_name, const Mat &mat);
 #endif
 #endif // DENSEFLOW_UTILS_H
