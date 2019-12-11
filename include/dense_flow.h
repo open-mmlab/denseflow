@@ -64,16 +64,16 @@ class DenseFlow {
     static void load_frames_wrap(void *arg, bool use_frames, bool verbose) {
         return static_cast<DenseFlow *>(arg)->load_frames(use_frames, verbose);
     }
-    static void calc_optflows_warp(void *arg, bool verbose) {
+    static void calc_optflows_wrap(void *arg, bool verbose) {
         return static_cast<DenseFlow *>(arg)->calc_optflows(verbose);
     }
-    static void encode_save_warp(void *arg, bool verbose) {
+    static void encode_save_wrap(void *arg, bool verbose) {
         return static_cast<DenseFlow *>(arg)->encode_save(verbose);
     }
     void launch(bool use_frames, bool verbose) {
         thread thread_load_frames(load_frames_wrap, this, use_frames, verbose);
-        thread thread_calc_optflow(calc_optflows_warp, this, false);
-        thread thread_encode_save(encode_save_warp, this, false);
+        thread thread_calc_optflow(calc_optflows_wrap, this, false);
+        thread thread_encode_save(encode_save_wrap, this, false);
         thread_load_frames.join();
         thread_calc_optflow.join();
         thread_encode_save.join();
