@@ -75,8 +75,8 @@ bool DenseFlow::get_new_size(const VideoCapture &video_stream, const vector<path
     return do_resize;
 }
 
-void DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames,
-                                     bool do_resize, const Size &size, path output_dir, bool verbose) {
+int DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames,
+                                    bool do_resize, const Size &size, path output_dir, bool verbose) {
     int video_frame_idx = 0;
     while (true) {
         vector<Mat> frames_color;
@@ -89,16 +89,17 @@ void DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &f
             output_img.push_back(str_img);
         }
         writeImages(output_img, (output_dir / "img").c_str(), video_frame_idx);
+        video_frame_idx += N;
         if (!is_open) {
             break;
         }
-        video_frame_idx += N;
         if (use_frames) {
             frames_path.erase(frames_path.begin(), frames_path.begin() + N);
         } else {
             video_stream.set(cv::CAP_PROP_POS_FRAMES, video_frame_idx);
         }
     }
+    return video_frame_idx;
 }
 
 void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
@@ -130,8 +131,8 @@ void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
         int frames_num;
         bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
         if (verbose)
-            cout << video_path << ", frames appro: " << frames_num << endl;
-        extract_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, verbose);
+            cout << video_path << ", frames ≈ " << frames_num << endl;
+        frames_num = extract_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, verbose); // exact frame count
         total_frames += frames_num;
         if (!use_frames)
             video_stream.release();

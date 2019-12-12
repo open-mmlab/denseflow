@@ -57,7 +57,7 @@ class DenseFlow {
     void load_frames(bool use_frames, bool verbose = true);
     void calc_optflows(bool verbose = true);
     void encode_save(bool verbose = true);
-    void extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
+    int extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
                               const Size &size, path output_dir, bool verbose);
 
   public:
