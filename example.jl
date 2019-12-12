@@ -60,6 +60,7 @@ ITEMS = splitobs(readdir(SOURCEDIR), at=tuple(ones(SPLITS-1)/SPLITS...))[SPLIT]
 DONES = readdir(DONEDIR)
 ITEMS = [joinpath(SOURCEDIR, x) for x in setdiff(Set(ITEMS), Set(DONES))]
 println("$(length(ITEMS)) items to process at gpu $(GPU)")
+length(ITEMS) == 0 && return
 
 n = ceil(Int, length(ITEMS)/BATCH)
 for i in 1:n

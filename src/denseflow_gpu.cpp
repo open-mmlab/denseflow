@@ -268,6 +268,7 @@ void DenseFlow::load_frames(bool use_frames, bool verbose) {
 
 void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &algorithm, int step, bool verbose,
                                   Stream &stream) {
+    // create
     Ptr<cuda::FarnebackOpticalFlow> alg_farn;
     Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1;
     Ptr<cuda::BroxOpticalFlow> alg_brox;
@@ -289,6 +290,8 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     } else if (algorithm == "brox") {
         alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
     }
+
+    // compute
     int N = frames_gray.item_data.size();
     int M = N - abs(step);
     if (M <= 0)
@@ -324,6 +327,20 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
             flow_gpu.download(flows[i]);
         }
     }
+
+    // release
+    if (algorithm == "nv") {
+#if (USE_NVFLOW)
+        alg_nv.release();
+#endif
+    } else if (algorithm == "tvl1") {
+        alg_tvl1.release();
+    } else if (algorithm == "farn") {
+        alg_farn.release();
+    } else if (algorithm == "brox") {
+        alg_brox.release();
+    }
+
     FlowBuffer flow_buffer(flows, frames_gray.output_dir, frames_gray.base_start);
     unique_lock<mutex> lock(flows_mtx);
     while (flows_queue.size() == flows_maxsize) {
