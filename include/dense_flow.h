@@ -12,8 +12,9 @@ class FlowBuffer {
     vector<Mat> item_data;
     path output_dir;
     int base_start;
-    FlowBuffer(vector<Mat> item_data, path output_dir, int base_start)
-        : item_data(item_data), output_dir(output_dir), base_start(base_start) {}
+    bool last_buffer;
+    FlowBuffer(vector<Mat> item_data, path output_dir, int base_start, bool last_buffer)
+        : item_data(item_data), output_dir(output_dir), base_start(base_start), last_buffer(last_buffer) {}
 };
 
 class DenseFlow {

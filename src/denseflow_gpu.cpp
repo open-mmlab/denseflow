@@ -180,7 +180,7 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
     while (true) {
         vector<Mat> frames_gray;
         bool is_open = load_frames_batch(video_stream, frames_path, use_frames, frames_gray, do_resize, size, true);
-        FlowBuffer frames_gray_item(frames_gray, output_dir, video_flow_idx);
+        FlowBuffer frames_gray_item(frames_gray, output_dir, video_flow_idx, !is_open);
         unique_lock<mutex> lock(frames_gray_mtx);
         while (frames_gray_queue.size() == frames_gray_maxsize) {
             if (verbose)
@@ -343,7 +343,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
         }
     }
 
-    FlowBuffer flow_buffer(flows, frames_gray.output_dir, frames_gray.base_start);
+    FlowBuffer flow_buffer(flows, frames_gray.output_dir, frames_gray.base_start, frames_gray.last_buffer);
     unique_lock<mutex> lock(flows_mtx);
     while (flows_queue.size() == flows_maxsize) {
         if (verbose)
@@ -382,8 +382,6 @@ void DenseFlow::calc_optflows(bool verbose) {
 }
 
 void DenseFlow::encode_save(bool verbose) {
-    string record_tmp = "";
-    bool init = false;
     while (true) {
         unique_lock<mutex> lock(flows_mtx);
         while (flows_queue.size() == 0) {
@@ -422,25 +420,17 @@ void DenseFlow::encode_save(bool verbose) {
         writeHDF5(output_h5_x, flow_buffer.output_dir.c_str(), "flow_x", step, flow_buffer.base_start);
         writeHDF5(output_h5_y, flow_buffer.output_dir.c_str(), "flow_y", step, flow_buffer.base_start);
 #endif
-        if (!init) {
-            record_tmp = flow_buffer.output_dir.stem().string();
-            init = true;
-        }
-        // record, the last batch in a video (approximately)
-        if (is_record) {
-            if ((M + abs(step) < batch_maxsize) ||
-                ((M + abs(step) == batch_maxsize) && record_tmp != flow_buffer.output_dir.stem().string())) {
-                path donedir;
-                if (has_class)
-                    donedir = flow_buffer.output_dir.parent_path().parent_path() / ".done" /
-                              flow_buffer.output_dir.parent_path().filename();
-                else
-                    donedir = flow_buffer.output_dir.parent_path() / ".done";
-                path donefile = donedir / record_tmp;
-                createFile(donefile);
-                cout << "approximately done: " << donefile << endl;
-                record_tmp = flow_buffer.output_dir.stem().string();
-            }
+        // mark done for the last batch of the video
+        if (is_record && flow_buffer.last_buffer) {
+            path donedir;
+            if (has_class)
+                donedir = flow_buffer.output_dir.parent_path().parent_path() / ".done" /
+                          flow_buffer.output_dir.parent_path().filename();
+            else
+                donedir = flow_buffer.output_dir.parent_path() / ".done";
+            path donefile = donedir / flow_buffer.output_dir.stem().string();
+            createFile(donefile);
+            cout << "done marked at: " << donefile << endl;
         }
 
         if (ready_to_exit3)
