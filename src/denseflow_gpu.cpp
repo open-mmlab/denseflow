@@ -430,7 +430,7 @@ void DenseFlow::encode_save(bool verbose) {
                 donedir = flow_buffer.output_dir.parent_path() / ".done";
             path donefile = donedir / flow_buffer.output_dir.stem().string();
             createFile(donefile);
-            cout << "done marked at: " << donefile << endl;
+            cout << "done video " << donefile << endl;
         }
 
         if (ready_to_exit3)

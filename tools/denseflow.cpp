@@ -61,17 +61,16 @@ int main(int argc, char **argv) {
                 } else {
                     outdir = output_dir / vidfile.stem();
                 }
-                create_directories(outdir);
-                video_paths.push_back(vidfile);
-                output_dirs.push_back(outdir);
-                // mark done
                 path donedir;
                 if (has_class) {
                     donedir = output_dir / ".done" / vidfile.parent_path().filename();
                 } else {
                     donedir = output_dir / ".done";
                 }
+                create_directories(outdir);
                 create_directories(donedir);
+                video_paths.push_back(vidfile);
+                output_dirs.push_back(outdir);
             }
         } else {
             path outdir = output_dir / video_path.stem();
