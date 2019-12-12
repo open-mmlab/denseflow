@@ -295,52 +295,52 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
 
     // compute
     int N = frames_gray.item_data.size();
-    int M = N - abs(step);
-    if (M <= 0)
-        return;
+    int M = max(N - abs(step), 0);
     vector<Mat> flows(M);
-    GpuMat flow_gpu;
-    GpuMat gray_a, gray_b;
-    for (size_t i = 0; i < M; ++i) {
-        Mat flow;
-        int a = step > 0 ? i : i - step;
-        int b = step > 0 ? i + step : i;
-        gray_a.upload(frames_gray.item_data[a], stream);
-        gray_b.upload(frames_gray.item_data[b], stream);
+    if (M > 0) {
+        GpuMat flow_gpu;
+        GpuMat gray_a, gray_b;
+        for (size_t i = 0; i < M; ++i) {
+            Mat flow;
+            int a = step > 0 ? i : i - step;
+            int b = step > 0 ? i + step : i;
+            gray_a.upload(frames_gray.item_data[a], stream);
+            gray_b.upload(frames_gray.item_data[b], stream);
+            if (algorithm == "nv") {
+#if (USE_NVFLOW)
+                alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
+                alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
+#endif
+            } else {
+                if (algorithm == "tvl1") {
+                    alg_tvl1->calc(gray_a, gray_b, flow_gpu, stream);
+                } else if (algorithm == "farn") {
+                    alg_farn->calc(gray_a, gray_b, flow_gpu, stream);
+                } else if (algorithm == "brox") {
+                    GpuMat d_buf_0, d_buf_1;
+                    gray_a.convertTo(d_buf_0, CV_32F, 1.0 / 255.0, stream);
+                    gray_b.convertTo(d_buf_1, CV_32F, 1.0 / 255.0, stream);
+                    alg_brox->calc(d_buf_0, d_buf_1, flow_gpu, stream);
+                } else {
+                    throw std::runtime_error("unknown optical algorithm: " + algorithm);
+                    return;
+                }
+                flow_gpu.download(flows[i]);
+            }
+        }
+
+        // release
         if (algorithm == "nv") {
 #if (USE_NVFLOW)
-            alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
-            alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
+            alg_nv.release();
 #endif
-        } else {
-            if (algorithm == "tvl1") {
-                alg_tvl1->calc(gray_a, gray_b, flow_gpu, stream);
-            } else if (algorithm == "farn") {
-                alg_farn->calc(gray_a, gray_b, flow_gpu, stream);
-            } else if (algorithm == "brox") {
-                GpuMat d_buf_0, d_buf_1;
-                gray_a.convertTo(d_buf_0, CV_32F, 1.0 / 255.0, stream);
-                gray_b.convertTo(d_buf_1, CV_32F, 1.0 / 255.0, stream);
-                alg_brox->calc(d_buf_0, d_buf_1, flow_gpu, stream);
-            } else {
-                throw std::runtime_error("unknown optical algorithm: " + algorithm);
-                return;
-            }
-            flow_gpu.download(flows[i]);
+        } else if (algorithm == "tvl1") {
+            alg_tvl1.release();
+        } else if (algorithm == "farn") {
+            alg_farn.release();
+        } else if (algorithm == "brox") {
+            alg_brox.release();
         }
-    }
-
-    // release
-    if (algorithm == "nv") {
-#if (USE_NVFLOW)
-        alg_nv.release();
-#endif
-    } else if (algorithm == "tvl1") {
-        alg_tvl1.release();
-    } else if (algorithm == "farn") {
-        alg_farn.release();
-    } else if (algorithm == "brox") {
-        alg_brox.release();
     }
 
     FlowBuffer flow_buffer(flows, frames_gray.output_dir, frames_gray.base_start);
