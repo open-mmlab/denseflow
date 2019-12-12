@@ -433,10 +433,10 @@ void DenseFlow::encode_save(bool verbose) {
 
 void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
                            int new_width, int new_height, int new_short, bool has_class, int dev_id, bool use_frames,
-                           bool verbose) {
+                           bool is_record, bool verbose) {
     setDevice(dev_id);
     DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
-                             has_class);
+                             has_class, is_record);
     double start_t = CurrentSeconds();
     if (step == 0) {
         flow_video_gpu.extract_frames_only(use_frames, verbose);

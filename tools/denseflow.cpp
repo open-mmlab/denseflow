@@ -48,7 +48,9 @@ int main(int argc, char **argv) {
 
         vector<path> video_paths;
         vector<path> output_dirs;
+        bool is_record = false;
         if (video_path.extension() == ".txt") {
+            is_record = true;
             std::ifstream ifs(video_path.string());
             string line;
             while (getline(ifs, line)) {
@@ -78,7 +80,7 @@ int main(int argc, char **argv) {
             output_dirs.push_back(outdir);
         }
         calcDenseFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
-                              has_class, device_id, use_frames, verbose);
+                              has_class, device_id, use_frames, is_record, verbose);
 
     } catch (const std::exception &ex) {
         std::cout << ex.what() << std::endl;
