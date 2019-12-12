@@ -111,7 +111,7 @@ void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
         if (use_frames) {
             directory_iterator end_itr;
             for (directory_iterator itr(video_path); itr != end_itr; ++itr) {
-                if (!boost::filesystem::is_regular_file(itr->status()) || itr->path().extension() != ".jpg")
+                if (!is_regular_file(itr->status()) || itr->path().extension() != ".jpg")
                     continue;
                 frames_path.push_back(itr->path());
             }
@@ -137,7 +137,7 @@ void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
         if (!use_frames)
             video_stream.release();
         if (verbose)
-            cout << "extract frames done video: " << video_path << ", " << frames_num << " frames" << endl;
+            cout << "extracted frames of video " << video_path << ", " << frames_num << " frames" << endl;
     }
 }
 
@@ -189,7 +189,7 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
         }
         frames_gray_queue.push(frames_gray_item);
         if (verbose)
-            cout << "push frames gray, video_flow_idx: " << video_flow_idx << ", batch_size: " << frames_gray.size()
+            cout << "push frames gray, video_flow_idx " << video_flow_idx << ", batch_size " << frames_gray.size()
                  << endl;
         cond_frames_gray_consume.notify_all();
         if (is_last && !is_open)
@@ -228,14 +228,14 @@ void DenseFlow::load_frames(bool use_frames, bool verbose) {
         hid_t file_id = H5Fcreate(h5_file.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
         herr_t status = H5Fclose(file_id);
         if (status < 0)
-            throw std::runtime_error("Failed to save hdf5 file: " + h5_file);
+            throw std::runtime_error("Failed to save hdf5 file " + h5_file);
 #endif
         VideoCapture video_stream;
         vector<path> frames_path;
         if (use_frames) {
             directory_iterator end_itr;
             for (directory_iterator itr(video_path); itr != end_itr; ++itr) {
-                if (!boost::filesystem::is_regular_file(itr->status()) || itr->path().extension() != ".jpg")
+                if (!is_regular_file(itr->status()) || itr->path().extension() != ".jpg")
                     continue;
                 frames_path.push_back(itr->path());
             }
@@ -262,7 +262,7 @@ void DenseFlow::load_frames(bool use_frames, bool verbose) {
         if (!use_frames)
             video_stream.release();
         if (verbose)
-            cout << "load done video: " << video_path << ", " << frames_num << " frames" << endl;
+            cout << "loaded video " << video_path << ", " << frames_num << " frames" << endl;
     }
     if (verbose)
         cout << "load frames exit." << endl;
@@ -322,7 +322,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
                     gray_b.convertTo(d_buf_1, CV_32F, 1.0 / 255.0, stream);
                     alg_brox->calc(d_buf_0, d_buf_1, flow_gpu, stream);
                 } else {
-                    throw std::runtime_error("unknown optical algorithm: " + algorithm);
+                    throw std::runtime_error("unknown optical algorithm " + algorithm);
                     return;
                 }
                 flow_gpu.download(flows[i]);
@@ -352,7 +352,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     }
     flows_queue.push(flow_buffer);
     if (verbose)
-        cout << "flows queue push a item, size: " << flows_queue.size() << endl;
+        cout << "flows queue push a item, size " << flows_queue.size() << endl;
     cond_flows_consume.notify_all();
     lock.unlock();
 }
@@ -394,7 +394,7 @@ void DenseFlow::encode_save(bool verbose) {
         if (ready_to_exit2 && flows_queue.size() == 0)
             ready_to_exit3 = true;
         if (verbose)
-            cout << "flows queue get a item, size: " << flows_queue.size() << endl;
+            cout << "flows queue get a item, size " << flows_queue.size() << endl;
         cond_flows_produce.notify_all();
         lock.unlock();
         // encode
@@ -423,14 +423,18 @@ void DenseFlow::encode_save(bool verbose) {
         // mark done for the last batch of the video
         if (is_record && flow_buffer.last_buffer) {
             path donedir;
-            if (has_class)
+            path title;
+            if (has_class) {
                 donedir = flow_buffer.output_dir.parent_path().parent_path() / ".done" /
                           flow_buffer.output_dir.parent_path().filename();
-            else
+                title = flow_buffer.output_dir.parent_path().filename() / flow_buffer.output_dir.filename();
+            } else {
                 donedir = flow_buffer.output_dir.parent_path() / ".done";
+                title = flow_buffer.output_dir.filename();
+            }
             path donefile = donedir / flow_buffer.output_dir.stem().string();
             createFile(donefile);
-            cout << "done video " << donefile << endl;
+            cout << "done video " << title << endl;
         }
 
         if (ready_to_exit3)

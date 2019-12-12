@@ -17,6 +17,7 @@ int main(int argc, char **argv) {
                             "{ d deviceId     | 0    | set gpu id }"
                             "{ cf classFolder |      | outputDir/class/video/flow.jpg }"
                             "{ if inputFrames |      | inputs are frames }"
+                            "{ f force        |      | regardless of the marked .done file }"
                             "{ v verbose      |      | verbose }"};
 
         CommandLineParser cmd(argc, argv, keys);
@@ -42,6 +43,7 @@ int main(int argc, char **argv) {
         int device_id = cmd.get<int>("deviceId");
         bool has_class = cmd.has("classFolder");
         bool use_frames = cmd.has("inputFrames");
+        bool force = cmd.has("force");
         bool verbose = cmd.has("verbose");
 
         Mat::setDefaultAllocator(HostMem::getAllocator(HostMem::AllocType::PAGE_LOCKED));
@@ -56,16 +58,21 @@ int main(int argc, char **argv) {
             while (getline(ifs, line)) {
                 path vidfile(line);
                 path outdir;
+                path donedir;
+                path donefile;
                 if (has_class) {
                     outdir = output_dir / vidfile.parent_path().filename() / vidfile.stem();
-                } else {
-                    outdir = output_dir / vidfile.stem();
-                }
-                path donedir;
-                if (has_class) {
                     donedir = output_dir / ".done" / vidfile.parent_path().filename();
                 } else {
+                    outdir = output_dir / vidfile.stem();
                     donedir = output_dir / ".done";
+                }
+                donefile = donedir / vidfile.stem();
+                if (!force && is_regular_file(donefile)) {
+                    if (verbose) {
+                        cout << "skip " << vidfile.parent_path().filename() / vidfile.stem() << endl;
+                    }
+                    continue;
                 }
                 create_directories(outdir);
                 create_directories(donedir);
