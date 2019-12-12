@@ -8,8 +8,7 @@ Extracting dense flow field given a video.
 - support single video (or a frame folder) / a list of videos (or a list of frame folders) as input
 - support multiple output types (image, hdf5)
 - faster, 40% faster (by parallelize IO & computation)
-- record the progress when extract a list of videos (Note: restart from the recent "done video",
-  that is, the recent "approximately done video" may not actually done)
+- record the progress when extract a list of videos, and resume by simply running the same command again (idempotent)
 
 
 ### Install
