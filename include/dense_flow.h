@@ -50,15 +50,15 @@ class DenseFlow {
                       Size &new_size, int &frames_num);
     bool load_frames_batch(VideoCapture &video_stream, const vector<path> &frames_path, bool use_frames,
                            vector<Mat> &frames_gray, bool do_resize, const Size &size, bool to_gray);
-    void load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
-                           const Size &size, path output_dir, bool is_last, bool verbose);
+    int load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
+                          const Size &size, path output_dir, bool is_last, bool verbose);
     void calc_optflows_imp(const FlowBuffer &frames_gray, const string &algorithm, int step, bool verbose,
                            Stream &stream = Stream::Null());
     void load_frames(bool use_frames, bool verbose = true);
     void calc_optflows(bool verbose = true);
     void encode_save(bool verbose = true);
     int extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
-                              const Size &size, path output_dir, bool verbose);
+                             const Size &size, path output_dir, bool verbose);
 
   public:
     static void load_frames_wrap(void *arg, bool use_frames, bool verbose) {

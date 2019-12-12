@@ -132,12 +132,12 @@ void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
         bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
         if (verbose)
             cout << video_path << ", frames ≈ " << frames_num << endl;
-        frames_num = extract_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, verbose); // exact frame count
-        total_frames += frames_num;
+        frames_num = extract_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, verbose);
+        total_frames += frames_num; // exact frame count
         if (!use_frames)
             video_stream.release();
         if (verbose)
-            cout << "extract frames done video: " << video_path << endl;
+            cout << "extract frames done video: " << video_path << ", " << frames_num << " frames" << endl;
     }
 }
 
@@ -174,8 +174,8 @@ bool DenseFlow::load_frames_batch(VideoCapture &video_stream, const vector<path>
     return true;
 }
 
-void DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames,
-                                  bool do_resize, const Size &size, path output_dir, bool is_last, bool verbose) {
+int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
+                                 const Size &size, path output_dir, bool is_last, bool verbose) {
     int video_flow_idx = 0;
     while (true) {
         vector<Mat> frames_gray;
@@ -195,17 +195,18 @@ void DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &fram
         if (is_last && !is_open)
             ready_to_exit1 = true;
         lock.unlock();
+        int M = frames_gray.size() - abs(step);
+        video_flow_idx += M;
         // read done a video
         if (!is_open)
             break;
-        int M = frames_gray.size() - abs(step);
-        video_flow_idx += M;
         if (use_frames) {
             frames_path.erase(frames_path.begin(), frames_path.begin() + M);
         } else {
             video_stream.set(cv::CAP_PROP_POS_FRAMES, video_flow_idx);
         }
     }
+    return video_flow_idx + abs(step);
 }
 
 void DenseFlow::load_frames(bool use_frames, bool verbose) {
@@ -254,14 +255,14 @@ void DenseFlow::load_frames(bool use_frames, bool verbose) {
         int frames_num;
         bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
         if (verbose)
-            cout << video_path << ", frames appro: " << frames_num << endl;
-        total_frames += frames_num; // approximately
-        load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir,
-                          i == video_paths.size() - 1, verbose);
+            cout << video_path << ", frames ≈ " << frames_num << endl;
+        frames_num = load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir,
+                                       i == video_paths.size() - 1, verbose);
+        total_frames += frames_num; // exact frame count
         if (!use_frames)
             video_stream.release();
         if (verbose)
-            cout << "load done video: " << video_path << endl;
+            cout << "load done video: " << video_path << ", " << frames_num << " frames" << endl;
     }
     if (verbose)
         cout << "load frames exit." << endl;
@@ -463,5 +464,6 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
     }
     double end_t = CurrentSeconds();
     unsigned long N = flow_video_gpu.get_prepared_total_frames();
-    cout << N << " files processed, using " << end_t - start_t << "s, speed " << N / (end_t - start_t) << "fps" << endl;
+    cout << video_paths.size() << " videos (" << N << " frames) processed, using " << end_t - start_t << "s, speed "
+         << N / (end_t - start_t) << "fps" << endl;
 }
