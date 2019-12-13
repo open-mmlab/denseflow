@@ -326,6 +326,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
                     return;
                 }
                 flow_gpu.download(flows[i]);
+                total_flows += 1;
             }
         }
 
@@ -457,7 +458,8 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
         flow_video_gpu.launch(use_frames, verbose);
     }
     double end_t = CurrentSeconds();
-    unsigned long N = flow_video_gpu.get_prepared_total_frames();
-    cout << video_paths.size() << " videos (" << N << " frames) processed, using " << end_t - start_t << "s, speed "
-         << N / (end_t - start_t) << "fps" << endl;
+    unsigned long N = flow_video_gpu.get_processed_total_frames();
+    unsigned long F = flow_video_gpu.get_processed_total_flows();
+    cout << video_paths.size() << " videos (" << N << " frames, " << F << " " << algorithm
+         << " flows) processed, using " << end_t - start_t << "s, speed " << N / (end_t - start_t) << "fps" << endl;
 }

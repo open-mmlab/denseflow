@@ -44,6 +44,7 @@ class DenseFlow {
     queue<FlowBuffer> frames_gray_queue;
     queue<FlowBuffer> flows_queue;
     unsigned long total_frames;
+    unsigned long total_flows;
 
     // meber functions
     bool check_param();
@@ -80,7 +81,8 @@ class DenseFlow {
         thread_encode_save.join();
     }
     void extract_frames_only(bool use_frames, bool verbose);
-    unsigned long get_prepared_total_frames() { return total_frames; }
+    unsigned long get_processed_total_frames() { return total_frames; }
+    unsigned long get_processed_total_flows() { return total_flows; }
 
     DenseFlow(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, int new_width,
               int new_height, int new_short, bool has_class, bool is_record)
@@ -89,10 +91,11 @@ class DenseFlow {
           is_record(is_record) {
         if (!check_param())
             throw std::runtime_error("check init param error.");
-        batch_maxsize = 128; // 512;
+        batch_maxsize = 128;
         frames_gray_maxsize = flows_maxsize = 3;
         ready_to_exit1 = ready_to_exit2 = ready_to_exit3 = false;
         total_frames = 0;
+        total_flows = 0;
     }
 };
 
