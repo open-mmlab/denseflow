@@ -67,6 +67,44 @@ denseflow videolist.txt -b=20 -a=tvl1 -s=1 -v
 - `v`: verbose
 - `s`: step, extract frames only when step=0
 
+### Documentation
+
+```bash
+$ denseflow -h
+GPU optical flow extraction.
+Usage: denseflow [params] input
+
+        -a, --algorithm (value:tvl1)
+                optical flow algorithm (nv/tvl1/farn/brox)
+        -b, --bound (value:32)
+                maximum of optical flow
+        --cf, --classFolder
+                outputDir/class/video/flow.jpg
+        -d, --deviceId (value:0)
+                set gpu id
+        -f, --force
+                regardless of the marked .done file
+        -h, --help (value:true)
+                print help message
+        --if, --inputFrames
+                inputs are frames
+        --newHeight, --nh (value:0)
+                new height
+        --newShort, --ns (value:0)
+                short side length
+        --newWidth, --nw (value:0)
+                new width
+        -o, --outputDir (value:.)
+                root dir of output
+        -s, --step (value:1)
+                right - left (0 for img, non-0 for flow)
+        -v, --verbose
+                verbose
+
+        input
+                filename of video or folder of frames or a list.txt of those
+```
+
 ### Credits
 
 Modified based on [yuanjun's fork of dense_flow](https://github.com/yjxiong/dense_flow).
