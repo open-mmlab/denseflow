@@ -147,9 +147,9 @@ bool DenseFlow::load_frames_batch(VideoCapture &video_stream, const vector<path>
     int cnt = 0;
     while (cnt < batch_maxsize) {
         if (use_frames) {
-            capture_frame = imread(frames_path[cnt].string(), IMREAD_COLOR);
             if (cnt == frames_path.size())
                 return false;
+            capture_frame = imread(frames_path[cnt].string(), IMREAD_COLOR);
         } else {
             video_stream >> capture_frame;
             if (capture_frame.empty())
