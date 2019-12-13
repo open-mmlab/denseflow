@@ -10,6 +10,11 @@ Extracting dense flow field given a video.
 - faster, 40% faster (by parallelize IO & computation)
 - record the progress when extract a list of videos, and resume by simply running the same command again (idempotent)
 
+### Term of Usage
+
+- Star the repo before clone
+- File issue if it does not work
+- Unstar if you feel it is unmaintained
 
 ### Install
 
