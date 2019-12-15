@@ -20,6 +20,8 @@ Extracting dense flow field given a video.
 
 #### Dependencies:
 
+> Look here https://github.com/innerlee/setup for simple install scripts!
+
 - OpenCV:
 [opencv3](https://www.learnopencv.com/install-opencv3-on-ubuntu/) |
 [opencv4](https://www.learnopencv.com/install-opencv-4-on-ubuntu-16-04/)
