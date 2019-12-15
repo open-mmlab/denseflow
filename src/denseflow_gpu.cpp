@@ -461,6 +461,6 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
     unsigned long N = flow_video_gpu.get_processed_total_frames();
     unsigned long F = flow_video_gpu.get_processed_total_flows();
     cout << video_paths.size() << " videos (" << N << " frames, " << F << " " << algorithm
-         << " flows) processed, using " << end_t - start_t << "s, flow speed " << F / (end_t - start_t) << "fps"
-         << endl;
+         << " flows) processed, using " << end_t - start_t << "s, decoding speed " << N / (end_t - start_t)
+         << "fps, flow speed " << F / (end_t - start_t) << "fps" << endl;
 }
