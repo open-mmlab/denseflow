@@ -67,7 +67,7 @@ denseflow videolist.txt -b=20 -a=tvl1 -s=1 -v
 - `dir`: output generated images to folder.
 - `tvl1`: optical flow algorithm
 - `v`: verbose
-- `s`: step, extract frames only when step=0
+- `s`: step, extract frames only, when step=0
 
 ### Documentation
 
