@@ -280,9 +280,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     if (algorithm == "nv") {
 #if (USE_NVFLOW)
         auto size = frames_gray.item_data[0].size();
-        alg_nv = NvidiaOpticalFlow_1_0::create(size.width, size.height,
-                                               NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW,
-                                               false, false, false, 0);
+        alg_nv = NvidiaOpticalFlow_1_0::create(size.width, size.height);
 #else
         throw std::runtime_error("NV hardware flow not enables, pls recompile");
 #endif
