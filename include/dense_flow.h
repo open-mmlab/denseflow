@@ -4,7 +4,7 @@
 #include "common.h"
 
 void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
-                           int new_width, int new_height, int new_short, bool has_class, int dev_id, bool use_frames,
+                           int new_width, int new_height, int new_short, bool has_class, bool use_frames,
                            bool is_record, bool verbose);
 
 class FlowBuffer {

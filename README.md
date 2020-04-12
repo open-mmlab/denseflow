@@ -82,8 +82,6 @@ Usage: denseflow [params] input
                 maximum of optical flow
         --cf, --classFolder
                 outputDir/class/video/flow.jpg
-        -d, --deviceId (value:0)
-                set gpu id
         -f, --force
                 regardless of the marked .done file
         -h, --help (value:true)

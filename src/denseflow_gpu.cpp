@@ -279,9 +279,10 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
 #endif
     if (algorithm == "nv") {
 #if (USE_NVFLOW)
+        auto size = frames_gray.item_data[0].size();
         alg_nv = NvidiaOpticalFlow_1_0::create(size.width, size.height,
                                                NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW,
-                                               false, false, false, dev_id);
+                                               false, false, false, 0);
 #else
         throw std::runtime_error("NV hardware flow not enables, pls recompile");
 #endif
@@ -308,7 +309,8 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
             gray_b.upload(frames_gray.item_data[b], stream);
             if (algorithm == "nv") {
 #if (USE_NVFLOW)
-                alg_nv->calc(frames_gray[a], frames_gray[b], flow, stream);
+                auto size = frames_gray.item_data[0].size();
+                alg_nv->calc(gray_a, gray_b, flow, stream);
                 alg_nv->upSampler(flow, size.width, size.height, alg_nv->getGridSize(), flows[i]);
 #endif
             } else {
@@ -446,9 +448,9 @@ void DenseFlow::encode_save(bool verbose) {
 }
 
 void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
-                           int new_width, int new_height, int new_short, bool has_class, int dev_id, bool use_frames,
+                           int new_width, int new_height, int new_short, bool has_class, bool use_frames,
                            bool is_record, bool verbose) {
-    setDevice(dev_id);
+    setDevice(0);
     DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
                              has_class, is_record);
     double start_t = CurrentSeconds();

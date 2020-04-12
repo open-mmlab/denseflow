@@ -14,7 +14,6 @@ int main(int argc, char **argv) {
                             "{ nw newWidth    | 0    | new width }"
                             "{ nh newHeight   | 0    | new height }"
                             "{ ns newShort    | 0    | short side length }"
-                            "{ d deviceId     | 0    | set gpu id }"
                             "{ cf classFolder |      | outputDir/class/video/flow.jpg }"
                             "{ if inputFrames |      | inputs are frames }"
                             "{ f force        |      | regardless of the marked .done file }"
@@ -40,7 +39,6 @@ int main(int argc, char **argv) {
         int new_width = cmd.get<int>("newWidth");
         int new_height = cmd.get<int>("newHeight");
         int new_short = cmd.get<int>("newShort");
-        int device_id = cmd.get<int>("deviceId");
         bool has_class = cmd.has("classFolder");
         bool use_frames = cmd.has("inputFrames");
         bool force = cmd.has("force");
@@ -87,7 +85,7 @@ int main(int argc, char **argv) {
         }
         if (video_paths.size() > 0) {
             calcDenseFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
-                                  has_class, device_id, use_frames, is_record, verbose);
+                                  has_class, use_frames, is_record, verbose);
         }
 
     } catch (const std::exception &ex) {
