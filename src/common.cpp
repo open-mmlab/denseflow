@@ -35,7 +35,7 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &
 
 void writeImages(vector<vector<uchar>> images, string name_prefix, const int start) {
     for (int i = 0; i < images.size(); ++i) {
-        char tmp[256];
+        char tmp[1024];
         sprintf(tmp, "_%05d.jpg", start + i);
         FILE *fp;
         fp = fopen((name_prefix + tmp).c_str(), "wb");
@@ -47,7 +47,7 @@ void writeImages(vector<vector<uchar>> images, string name_prefix, const int sta
 void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int step, const int start) {
     int base = step > 0 ? 0 : -step;
     for (int i = 0; i < images.size(); ++i) {
-        char tmp[256];
+        char tmp[1024];
         if (step > 1) {
             sprintf(tmp, "_p%d_%05d.jpg", step, start + i + base);
         } else if (step < 0) {
@@ -64,7 +64,7 @@ void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int
 
 #if (USE_HDF5)
 void writeHDF5(const vector<Mat> &images, string name_prefix, string phase, const int step, const int start) {
-    char h5_ext[256];
+    char h5_ext[1024];
     if (step > 1) {
         sprintf(h5_ext, "_p%d.h5", step);
     } else if (step < 0) {
@@ -76,7 +76,7 @@ void writeHDF5(const vector<Mat> &images, string name_prefix, string phase, cons
     hid_t file_id = H5Fopen(h5_file.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
     int base = step > 0 ? 0 : -step;
     for (int i = 0; i < images.size(); ++i) {
-        char tmp[256];
+        char tmp[1024];
         if (step > 1) {
             sprintf(tmp, "_p%d_%05d.jpg", step, start + i + base);
         } else if (step < 0) {
