@@ -4,7 +4,7 @@
 #include "common.h"
 
 void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
-                           int new_width, int new_height, int new_short, bool has_class, bool use_frames,
+                           int new_width, int new_height, int new_short, bool has_class, bool use_frames, bool save_h5,
                            bool is_record, bool verbose);
 
 class FlowBuffer {
@@ -56,26 +56,26 @@ class DenseFlow {
                           const Size &size, path output_dir, bool is_last, bool verbose);
     void calc_optflows_imp(const FlowBuffer &frames_gray, const string &algorithm, int step, bool verbose,
                            Stream &stream = Stream::Null());
-    void load_frames(bool use_frames, bool verbose = true);
+    void load_frames(bool use_frames, bool save_h5, bool verbose = true);
     void calc_optflows(bool verbose = true);
-    void encode_save(bool verbose = true);
+    void encode_save(bool save_h5 = false, bool verbose = true);
     int extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
                              const Size &size, path output_dir, bool verbose);
 
   public:
-    static void load_frames_wrap(void *arg, bool use_frames, bool verbose) {
-        return static_cast<DenseFlow *>(arg)->load_frames(use_frames, verbose);
+    static void load_frames_wrap(void *arg, bool use_frames, bool save_h5, bool verbose) {
+        return static_cast<DenseFlow *>(arg)->load_frames(use_frames, save_h5, verbose);
     }
     static void calc_optflows_wrap(void *arg, bool verbose) {
         return static_cast<DenseFlow *>(arg)->calc_optflows(verbose);
     }
-    static void encode_save_wrap(void *arg, bool verbose) {
-        return static_cast<DenseFlow *>(arg)->encode_save(verbose);
+    static void encode_save_wrap(void *arg, bool save_h5, bool verbose) {
+        return static_cast<DenseFlow *>(arg)->encode_save(save_h5, verbose);
     }
-    void launch(bool use_frames, bool verbose) {
-        thread thread_load_frames(load_frames_wrap, this, use_frames, verbose);
+    void launch(bool use_frames, bool save_h5, bool verbose) {
+        thread thread_load_frames(load_frames_wrap, this, use_frames, save_h5, verbose);
         thread thread_calc_optflow(calc_optflows_wrap, this, false);
-        thread thread_encode_save(encode_save_wrap, this, false);
+        thread thread_encode_save(encode_save_wrap, this, save_h5, false);
         thread_load_frames.join();
         thread_calc_optflow.join();
         thread_encode_save.join();

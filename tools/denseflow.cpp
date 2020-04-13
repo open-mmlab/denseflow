@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
                             "{ ns newShort    | 0    | short side length }"
                             "{ cf classFolder |      | outputDir/class/video/flow.jpg }"
                             "{ if inputFrames |      | inputs are frames }"
+                            "{ h5 saveH5      |      | save .h5 file }"
                             "{ f force        |      | regardless of the marked .done file }"
                             "{ v verbose      |      | verbose }"};
 
@@ -42,6 +43,7 @@ int main(int argc, char **argv) {
         bool has_class = cmd.has("classFolder");
         bool use_frames = cmd.has("inputFrames");
         bool force = cmd.has("force");
+        bool save_h5 = cmd.has("saveH5");
         bool verbose = cmd.has("verbose");
 
         Mat::setDefaultAllocator(HostMem::getAllocator(HostMem::AllocType::PAGE_LOCKED));
@@ -85,7 +87,7 @@ int main(int argc, char **argv) {
         }
         if (video_paths.size() > 0) {
             calcDenseFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
-                                  has_class, use_frames, is_record, verbose);
+                                  has_class, use_frames, save_h5, is_record, verbose);
         }
 
     } catch (const std::exception &ex) {

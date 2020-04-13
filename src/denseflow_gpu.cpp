@@ -209,27 +209,31 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
     return video_flow_idx + abs(step);
 }
 
-void DenseFlow::load_frames(bool use_frames, bool verbose) {
+void DenseFlow::load_frames(bool use_frames, bool save_h5, bool verbose) {
     for (size_t i = 0; i < video_paths.size(); i++) {
         path video_path = video_paths[i];
         path output_dir = output_dirs[i];
+        if (save_h5) {
 #if (USE_HDF5)
-        // create h5
-        char h5_ext[256];
-        if (step > 1) {
-            sprintf(h5_ext, "_p%d.h5", step);
-        } else if (step < 0) {
-            sprintf(h5_ext, "_m%d.h5", -step);
-        } else {
-            sprintf(h5_ext, ".h5");
-        }
-        string h5_file = output_dir.string() + h5_ext;
-        // overwrite if exists
-        hid_t file_id = H5Fcreate(h5_file.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-        herr_t status = H5Fclose(file_id);
-        if (status < 0)
-            throw std::runtime_error("Failed to save hdf5 file " + h5_file);
+            //  create h5
+            char h5_ext[256];
+            if (step > 1) {
+                sprintf(h5_ext, "_p%d.h5", step);
+            } else if (step < 0) {
+                sprintf(h5_ext, "_m%d.h5", -step);
+            } else {
+                sprintf(h5_ext, ".h5");
+            }
+            string h5_file = output_dir.string() + h5_ext;
+            // overwrite if exists
+            hid_t file_id = H5Fcreate(h5_file.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+            herr_t status = H5Fclose(file_id);
+            if (status < 0)
+                throw std::runtime_error("Failed to save hdf5 file " + h5_file);
+#else
+            throw std::runtime_error("HDF5 support is not enabled, pls recompile");
 #endif
+        }
         VideoCapture video_stream;
         vector<path> frames_path;
         if (use_frames) {
@@ -382,7 +386,7 @@ void DenseFlow::calc_optflows(bool verbose) {
         cout << "calc optflows exit." << endl;
 }
 
-void DenseFlow::encode_save(bool verbose) {
+void DenseFlow::encode_save(bool save_h5, bool verbose) {
     while (true) {
         unique_lock<mutex> lock(flows_mtx);
         while (flows_queue.size() == 0) {
@@ -418,8 +422,10 @@ void DenseFlow::encode_save(bool verbose) {
         writeFlowImages(output_x, (flow_buffer.output_dir / "flow_x").c_str(), step, flow_buffer.base_start);
         writeFlowImages(output_y, (flow_buffer.output_dir / "flow_y").c_str(), step, flow_buffer.base_start);
 #if (USE_HDF5)
-        writeHDF5(output_h5_x, flow_buffer.output_dir.c_str(), "flow_x", step, flow_buffer.base_start);
-        writeHDF5(output_h5_y, flow_buffer.output_dir.c_str(), "flow_y", step, flow_buffer.base_start);
+        if (save_h5) {
+            writeHDF5(output_h5_x, flow_buffer.output_dir.c_str(), "flow_x", step, flow_buffer.base_start);
+            writeHDF5(output_h5_y, flow_buffer.output_dir.c_str(), "flow_y", step, flow_buffer.base_start);
+        }
 #endif
         // mark done for the last batch of the video
         if (is_record && flow_buffer.last_buffer) {
@@ -446,7 +452,7 @@ void DenseFlow::encode_save(bool verbose) {
 }
 
 void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
-                           int new_width, int new_height, int new_short, bool has_class, bool use_frames,
+                           int new_width, int new_height, int new_short, bool has_class, bool use_frames, bool save_h5,
                            bool is_record, bool verbose) {
     setDevice(0);
     DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
@@ -455,7 +461,7 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
     if (step == 0) {
         flow_video_gpu.extract_frames_only(use_frames, verbose);
     } else {
-        flow_video_gpu.launch(use_frames, verbose);
+        flow_video_gpu.launch(use_frames, save_h5, verbose);
     }
     double end_t = CurrentSeconds();
     unsigned long N = flow_video_gpu.get_processed_total_frames();
