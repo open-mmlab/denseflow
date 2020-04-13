@@ -286,7 +286,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
         auto size = frames_gray.item_data[0].size();
         alg_nv = NvidiaOpticalFlow_1_0::create(size.width, size.height);
 #else
-        throw std::runtime_error("NV hardware flow not enables, pls recompile");
+        throw std::runtime_error("NV hardware flow not enabled, pls recompile");
 #endif
     } else if (algorithm == "tvl1") {
         alg_tvl1 = cuda::OpticalFlowDual_TVL1::create();
