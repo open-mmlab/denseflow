@@ -405,9 +405,9 @@ void DenseFlow::encode_save(bool save_h5, bool verbose) {
         // encode
         vector<vector<uchar>> output_x, output_y;
         vector<Mat> output_h5_x, output_h5_y;
-        Mat planes[2];
         int M = flow_buffer.item_data.size();
         for (int i = 0; i < M; ++i) {
+            Mat planes[2];
             split(flow_buffer.item_data[i], planes);
             Mat flow_x(planes[0]);
             Mat flow_y(planes[1]);
