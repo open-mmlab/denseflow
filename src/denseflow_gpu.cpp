@@ -216,7 +216,7 @@ void DenseFlow::load_frames(bool use_frames, bool save_h5, bool verbose) {
         if (save_h5) {
 #if (USE_HDF5)
             //  create h5
-            char h5_ext[256];
+            char h5_ext[2560];
             if (step > 1) {
                 sprintf(h5_ext, "_p%d.h5", step);
             } else if (step < 0) {
