@@ -96,8 +96,10 @@ Usage: denseflow [params] input
                 new width
         -o, --outputDir (value:.)
                 root dir of output
-        -s, --step (value:1)
+        -s, --step (value:0)
                 right - left (0 for img, non-0 for flow)
+        --saveType, --st (value:jpg)
+                save format type (png/h5/jpg)
         -v, --verbose
                 verbose
 
