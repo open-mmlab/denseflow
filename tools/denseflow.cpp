@@ -46,10 +46,6 @@ int main(int argc, char **argv) {
         string save_type = cmd.get<string>("saveType");
         bool verbose = cmd.has("verbose");
 
-        if (save_type != "jpg" && save_type != "png" && save_type != "h5") {
-            throw std::runtime_error("only jpg/png/h5 are supported for output");
-        }
-
         Mat::setDefaultAllocator(HostMem::getAllocator(HostMem::AllocType::PAGE_LOCKED));
 
         vector<path> video_paths;

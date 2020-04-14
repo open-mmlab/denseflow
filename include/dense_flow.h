@@ -22,6 +22,7 @@ class DenseFlow {
     vector<path> video_paths;
     vector<path> output_dirs;
     string algorithm;
+    string save_type;
     int step;
     int bound;
     int new_width;
@@ -85,10 +86,10 @@ class DenseFlow {
     unsigned long get_processed_total_flows() { return total_flows; }
 
     DenseFlow(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, int new_width,
-              int new_height, int new_short, bool has_class, bool is_record)
+              int new_height, int new_short, bool has_class, bool is_record, string save_type)
         : video_paths(video_paths), output_dirs(output_dirs), algorithm(algorithm), step(step), bound(bound),
           new_width(new_width), new_height(new_height), new_short(new_short), has_class(has_class),
-          is_record(is_record) {
+          is_record(is_record), save_type(save_type) {
         if (!check_param())
             throw std::runtime_error("check init param error.");
         batch_maxsize = 128;

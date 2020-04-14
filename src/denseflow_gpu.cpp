@@ -33,6 +33,10 @@ bool DenseFlow::check_param() {
         cout << "do not set height and width when set short!" << endl;
         return false;
     }
+    if (save_type != "jpg" && save_type != "png" && save_type != "h5") {
+        cout << "only jpg/png/h5 are supported (no " << save_type << ") for output" << endl;
+        return false;
+    }
 
     return true;
 }
@@ -474,7 +478,7 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
                            string save_type, bool is_record, bool verbose) {
     setDevice(0);
     DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
-                             has_class, is_record);
+                             has_class, is_record, save_type);
     double start_t = CurrentSeconds();
     if (step == 0) {
         flow_video_gpu.extract_frames_only(use_frames, verbose);
