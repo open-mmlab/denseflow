@@ -24,14 +24,19 @@ void convertFlowToPngImage(const Mat &flow_x, const Mat &flow_y, Mat &img_bgr) {
     auto bound_y = std::ceil((std::max(abs(min), abs(max)) * 128. / 127.) / 4) * 4;
     float eps_x_inv = 1. / (base * bound_x);
     float eps_y_inv = 1. / (base * bound_y);
+    Mat x(flow_x.size(), CV_8UC1);
+    Mat y(flow_x.size(), CV_8UC1);
+    Mat b(flow_x.size(), CV_8UC1);
+    flow_x.convertTo(x, CV_8UC1, eps_x_inv, 128.);
+    flow_y.convertTo(y, CV_8UC1, eps_y_inv, 128.);
+    uchar bb_x = bound_x / 4;
+    uchar bb_y = bound_y / 4;
     auto half_h = flow_x.rows / 2;
-    for (int i = 0; i < flow_x.rows; ++i) {
-        for (int j = 0; j < flow_y.cols; ++j) {
-            img_bgr.at<Vec3b>(i, j)[2] = cvRound(flow_x.at<float>(i, j) * eps_x_inv + 128);
-            img_bgr.at<Vec3b>(i, j)[1] = cvRound(flow_y.at<float>(i, j) * eps_y_inv + 128);
-            img_bgr.at<Vec3b>(i, j)[0] = i < half_h ? bound_x / 4 : bound_y / 4;
-        }
-    }
+    rectangle(b, Point(0, 0), Point(flow_x.cols - 1, half_h), bb_x, FILLED);
+    rectangle(b, Point(0, half_h + 1), Point(flow_x.cols - 1, flow_x.rows - 1), bb_x, FILLED);
+    Mat source[] = {x, y, b};
+    int from_to[] = {0, 0, 1, 1, 2, 2};
+    mixChannels(source, 3, &img_bgr, 1, from_to, 3);
 }
 
 void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &encoded_x, vector<uchar> &encoded_y,
@@ -55,11 +60,8 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &
 void encodeFlowMapPng(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &encoded) {
     Mat flow_img_bgr(flow_map_x.size(), CV_8UC3);
     convertFlowToPngImage(flow_map_x, flow_map_y, flow_img_bgr);
-
     vector<int> compression_params;
-    compression_params.push_back(IMWRITE_PNG_COMPRESSION);
-    compression_params.push_back(9);
-    imencode(".png", flow_img_bgr, encoded, compression_params);
+    imencode(".png", flow_img_bgr, encoded);
 }
 
 void writeImages(vector<vector<uchar>> images, string name_prefix, const int start) {
