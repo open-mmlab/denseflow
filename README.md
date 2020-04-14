@@ -2,7 +2,7 @@
 
 Extracting dense flow field given a video.
 
-### Features
+## Features
 
 - support multiple optical flow algorithms, including Nvidia hardware optical flow
 - support single video (or a frame folder) / a list of videos (or a list of frame folders) as input
@@ -10,15 +10,15 @@ Extracting dense flow field given a video.
 - faster, 40% faster (by parallelize IO & computation)
 - record the progress when extract a list of videos, and resume by simply running the same command again (idempotent)
 
-### Term of Usage
+## Term of Usage
 
 - Star the repo before clone
 - File issue if it does not work
 - Unstar if you feel it is unmaintained
 
-### Install
+## Install
 
-#### Dependencies:
+### Dependencies:
 
 > Look here https://github.com/innerlee/setup for simple install scripts!
 
@@ -37,9 +37,9 @@ make -j
 make install
 ```
 
-### Usage
+## Usage
 
-#### Extract optical flow of a single video
+### Extract optical flow of a single video
 
 ```bash
 denseflow test.avi -b=20 -a=tvl1 -s=1 -v
@@ -52,7 +52,7 @@ denseflow test.avi -b=20 -a=tvl1 -s=1 -v
 - `v`: verbose
 - `s`: step, extract frames only when step=0
 
-#### Extract optical flow of a list of videos
+### Extract optical flow of a list of videos
 
 * resize
 * class folder
@@ -69,7 +69,7 @@ denseflow videolist.txt -b=20 -a=tvl1 -s=1 -v
 - `v`: verbose
 - `s`: step, extract frames only, when step=0
 
-### Documentation
+## Documentation
 
 ```bash
 $ denseflow -h
@@ -105,10 +105,19 @@ Usage: denseflow [params] input
                 filename of video or folder of frames or a list.txt of those
 ```
 
-### Credits
+### Flow Video Specification
+
+* Channels
+  - R: flow x
+  - G: flow y
+  - B: bound
+* For x and y values, we make sure that the value `128 + x` represents the range `[x-eps/2, x+eps/2]`.
+* Bound value `b` ranges from 0 to 255, it defines `eps` by formula `eps := b / 128`. For better defense of encoding noise, we allow `b` to take values with `b % 4 == 0`.
+
+## Credits
 
 Modified based on [yuanjun's fork of dense_flow](https://github.com/yjxiong/dense_flow).
 
-#### Main Authors:
+### Main Authors:
 
 Shiguang Wang, Zhizhong Li

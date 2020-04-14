@@ -15,6 +15,25 @@ void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &i
 #undef CAST
 }
 
+void convertFlowToPngImage(const Mat &flow_x, const Mat &flow_y, Mat &img_bgr) {
+    double base = 1. / 128.;
+    double min, max;
+    minMaxLoc(flow_x, &min, &max);
+    auto bound_x = std::ceil((std::max(abs(min), abs(max)) * 128. / 127.) / 4) * 4;
+    minMaxLoc(flow_y, &min, &max);
+    auto bound_y = std::ceil((std::max(abs(min), abs(max)) * 128. / 127.) / 4) * 4;
+    float eps_x_inv = 1. / (base * bound_x);
+    float eps_y_inv = 1. / (base * bound_y);
+    auto half_h = flow_x.rows / 2;
+    for (int i = 0; i < flow_x.rows; ++i) {
+        for (int j = 0; j < flow_y.cols; ++j) {
+            img_bgr.at<Vec3b>(i, j)[2] = cvRound(flow_x.at<float>(i, j) * eps_x_inv + 128);
+            img_bgr.at<Vec3b>(i, j)[1] = cvRound(flow_y.at<float>(i, j) * eps_y_inv + 128);
+            img_bgr.at<Vec3b>(i, j)[0] = i < half_h ? bound_x / 4 : bound_y / 4;
+        }
+    }
+}
+
 void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &encoded_x, vector<uchar> &encoded_y,
                    int bound, bool to_jpg) {
     Mat flow_img_x(flow_map_x.size(), CV_8UC1);
@@ -31,6 +50,16 @@ void encodeFlowMap(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &
         memcpy(encoded_x.data(), flow_img_x.data, flow_img_x.total());
         memcpy(encoded_y.data(), flow_img_y.data, flow_img_y.total());
     }
+}
+
+void encodeFlowMapPng(const Mat &flow_map_x, const Mat &flow_map_y, vector<uchar> &encoded) {
+    Mat flow_img_bgr(flow_map_x.size(), CV_8UC3);
+    convertFlowToPngImage(flow_map_x, flow_map_y, flow_img_bgr);
+
+    vector<int> compression_params;
+    compression_params.push_back(IMWRITE_PNG_COMPRESSION);
+    compression_params.push_back(9);
+    imencode(".png", flow_img_bgr, encoded, compression_params);
 }
 
 void writeImages(vector<vector<uchar>> images, string name_prefix, const int start) {
@@ -54,6 +83,24 @@ void writeFlowImages(vector<vector<uchar>> images, string name_prefix, const int
             sprintf(tmp, "_m%d_%05d.jpg", -step, start + i + base);
         } else {
             sprintf(tmp, "_%05d.jpg", start + i + base);
+        }
+        FILE *fp;
+        fp = fopen((name_prefix + tmp).c_str(), "wb");
+        fwrite(images[i].data(), 1, images[i].size(), fp);
+        fclose(fp);
+    }
+}
+
+void writeFlowImagesPng(vector<vector<uchar>> images, string name_prefix, const int step, const int start) {
+    int base = step > 0 ? 0 : -step;
+    for (int i = 0; i < images.size(); ++i) {
+        char tmp[1024];
+        if (step > 1) {
+            sprintf(tmp, "_p%d_%05d.png", step, start + i + base);
+        } else if (step < 0) {
+            sprintf(tmp, "_m%d_%05d.png", -step, start + i + base);
+        } else {
+            sprintf(tmp, "_%05d.png", start + i + base);
         }
         FILE *fp;
         fp = fopen((name_prefix + tmp).c_str(), "wb");

@@ -209,11 +209,11 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
     return video_flow_idx + abs(step);
 }
 
-void DenseFlow::load_frames(bool use_frames, bool save_h5, bool verbose) {
+void DenseFlow::load_frames(bool use_frames, string save_type, bool verbose) {
     for (size_t i = 0; i < video_paths.size(); i++) {
         path video_path = video_paths[i];
         path output_dir = output_dirs[i];
-        if (save_h5) {
+        if (save_type == "h5") {
 #if (USE_HDF5)
             //  create h5
             char h5_ext[1024];
@@ -386,7 +386,7 @@ void DenseFlow::calc_optflows(bool verbose) {
         cout << "calc optflows exit." << endl;
 }
 
-void DenseFlow::encode_save(bool save_h5, bool verbose) {
+void DenseFlow::encode_save(string save_type, bool verbose) {
     while (true) {
         unique_lock<mutex> lock(flows_mtx);
         while (flows_queue.size() == 0) {
@@ -402,31 +402,49 @@ void DenseFlow::encode_save(bool save_h5, bool verbose) {
             cout << "flows queue get a item, size " << flows_queue.size() << endl;
         cond_flows_produce.notify_all();
         lock.unlock();
-        // encode
-        vector<vector<uchar>> output_x, output_y;
-        vector<Mat> output_h5_x, output_h5_y;
+        // encode & save
         int M = flow_buffer.item_data.size();
-        for (int i = 0; i < M; ++i) {
+        if (save_type == "jpg") {
+            vector<vector<uchar>> output_x, output_y;
             Mat planes[2];
-            split(flow_buffer.item_data[i], planes);
-            Mat flow_x(planes[0]);
-            Mat flow_y(planes[1]);
-            vector<uchar> str_x, str_y;
-            encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
-            output_x.push_back(str_x);
-            output_y.push_back(str_y);
-            output_h5_x.push_back(flow_x);
-            output_h5_y.push_back(flow_y);
-        }
-        // save
-        writeFlowImages(output_x, (flow_buffer.output_dir / "flow_x").c_str(), step, flow_buffer.base_start);
-        writeFlowImages(output_y, (flow_buffer.output_dir / "flow_y").c_str(), step, flow_buffer.base_start);
+            for (int i = 0; i < M; ++i) {
+                split(flow_buffer.item_data[i], planes);
+                Mat flow_x(planes[0]);
+                Mat flow_y(planes[1]);
+                vector<uchar> str_x, str_y;
+                encodeFlowMap(flow_x, flow_y, str_x, str_y, bound);
+                output_x.push_back(str_x);
+                output_y.push_back(str_y);
+            }
+            writeFlowImages(output_x, (flow_buffer.output_dir / "flow_x").c_str(), step, flow_buffer.base_start);
+            writeFlowImages(output_y, (flow_buffer.output_dir / "flow_y").c_str(), step, flow_buffer.base_start);
+        } else if (save_type == "h5") {
 #if (USE_HDF5)
-        if (save_h5) {
+            vector<Mat> output_h5_x, output_h5_y;
+            for (int i = 0; i < M; ++i) {
+                Mat planes[2];
+                split(flow_buffer.item_data[i], planes);
+                Mat flow_x(planes[0]);
+                Mat flow_y(planes[1]);
+                output_h5_x.push_back(flow_x);
+                output_h5_y.push_back(flow_y);
+            }
             writeHDF5(output_h5_x, flow_buffer.output_dir.c_str(), "flow_x", step, flow_buffer.base_start);
             writeHDF5(output_h5_y, flow_buffer.output_dir.c_str(), "flow_y", step, flow_buffer.base_start);
-        }
 #endif
+        } else if (save_type == "png") {
+            vector<vector<uchar>> output;
+            for (int i = 0; i < M; ++i) {
+                Mat planes[2];
+                split(flow_buffer.item_data[i], planes);
+                Mat flow_x(planes[0]);
+                Mat flow_y(planes[1]);
+                vector<uchar> str;
+                encodeFlowMapPng(flow_x, flow_y, str);
+                output.push_back(str);
+            }
+            writeFlowImagesPng(output, (flow_buffer.output_dir / "flow").c_str(), step, flow_buffer.base_start);
+        }
         // mark done for the last batch of the video
         if (is_record && flow_buffer.last_buffer) {
             path donedir;
@@ -452,8 +470,8 @@ void DenseFlow::encode_save(bool save_h5, bool verbose) {
 }
 
 void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
-                           int new_width, int new_height, int new_short, bool has_class, bool use_frames, bool save_h5,
-                           bool is_record, bool verbose) {
+                           int new_width, int new_height, int new_short, bool has_class, bool use_frames,
+                           string save_type, bool is_record, bool verbose) {
     setDevice(0);
     DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
                              has_class, is_record);
@@ -461,7 +479,7 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
     if (step == 0) {
         flow_video_gpu.extract_frames_only(use_frames, verbose);
     } else {
-        flow_video_gpu.launch(use_frames, save_h5, verbose);
+        flow_video_gpu.launch(use_frames, save_type, verbose);
     }
     double end_t = CurrentSeconds();
     unsigned long N = flow_video_gpu.get_processed_total_frames();
