@@ -127,11 +127,11 @@ void writeHDF5(const vector<Mat> &images, string name_prefix, string phase, cons
     for (int i = 0; i < images.size(); ++i) {
         char tmp[1024];
         if (step > 1) {
-            sprintf(tmp, "_p%d_%05d.jpg", step, start + i + base);
+            sprintf(tmp, "_p%d_%05d", step, start + i + base);
         } else if (step < 0) {
-            sprintf(tmp, "_m%d_%05d.jpg", -step, start + i + base);
+            sprintf(tmp, "_m%d_%05d", -step, start + i + base);
         } else {
-            sprintf(tmp, "_%05d.jpg", start + i + base);
+            sprintf(tmp, "_%05d", start + i + base);
         }
         string flow_dataset = "/" + phase + tmp;
         // no group

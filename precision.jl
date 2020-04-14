@@ -5,7 +5,7 @@ using PyCall
 cv2 = pyimport("cv2")
 
 # get original data
-hdf = h5open("build/anli2.h5", "r")
+hdf = h5open("build/png/anli2.h5", "r")
 data = Dict(name => read(hdf, name) for name in names(hdf))
 
 function cast(flowx, flowy)
