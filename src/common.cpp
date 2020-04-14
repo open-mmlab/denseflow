@@ -17,11 +17,13 @@ void convertFlowToImage(const Mat &flow_x, const Mat &flow_y, Mat &img_x, Mat &i
 
 void convertFlowToPngImage(const Mat &flow_x, const Mat &flow_y, Mat &img_bgr) {
     double base = 1. / 128.;
-    double min, max;
-    minMaxLoc(flow_x, &min, &max);
-    auto bound_x = std::ceil((std::max(abs(min), abs(max)) * 128. / 127.) / 4) * 4;
-    minMaxLoc(flow_y, &min, &max);
-    auto bound_y = std::ceil((std::max(abs(min), abs(max)) * 128. / 127.) / 4) * 4;
+    double h = flow_x.rows;
+    double w = flow_x.cols;
+    double min_v, max_v;
+    minMaxLoc(flow_x, &min_v, &max_v);
+    auto bound_x = ceil((min(w, max(abs(min_v), abs(max_v))) * 128. / 127.) / 4) * 4;
+    minMaxLoc(flow_y, &min_v, &max_v);
+    auto bound_y = ceil((min(h, max(abs(min_v), abs(max_v))) * 128. / 127.) / 4) * 4;
     float eps_x_inv = 1. / (base * bound_x);
     float eps_y_inv = 1. / (base * bound_y);
     Mat x(flow_x.size(), CV_8UC1);
@@ -29,11 +31,9 @@ void convertFlowToPngImage(const Mat &flow_x, const Mat &flow_y, Mat &img_bgr) {
     Mat b(flow_x.size(), CV_8UC1);
     flow_x.convertTo(x, CV_8UC1, eps_x_inv, 128.);
     flow_y.convertTo(y, CV_8UC1, eps_y_inv, 128.);
-    uchar bb_x = bound_x / 4;
-    uchar bb_y = bound_y / 4;
-    auto half_h = flow_x.rows / 2;
-    rectangle(b, Point(0, 0), Point(flow_x.cols - 1, half_h), bb_x, FILLED);
-    rectangle(b, Point(0, half_h + 1), Point(flow_x.cols - 1, flow_x.rows - 1), bb_x, FILLED);
+    auto half_h = h / 2;
+    rectangle(b, Point(0, 0), Point(w - 1, half_h), bound_x / 4, FILLED);
+    rectangle(b, Point(0, half_h + 1), Point(w - 1, h - 1), bound_y / 4, FILLED);
     Mat source[] = {x, y, b};
     int from_to[] = {0, 0, 1, 1, 2, 2};
     mixChannels(source, 3, &img_bgr, 1, from_to, 3);
