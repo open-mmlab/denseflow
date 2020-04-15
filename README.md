@@ -32,7 +32,7 @@ Extracting dense flow field given a video.
 ```bash
 git clone https://github.com/innerlee/denseflow
 mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=$HOME/app ..
+cmake -DCMAKE_INSTALL_PREFIX=$HOME/app -DUSE_HDF5=no -DUSE_NVFLOW=no ..
 make -j
 make install
 ```
