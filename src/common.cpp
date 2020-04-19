@@ -21,9 +21,9 @@ void convertFlowToPngImage(const Mat &flow_x, const Mat &flow_y, Mat &img_bgr) {
     double w = flow_x.cols;
     double min_v, max_v;
     minMaxLoc(flow_x, &min_v, &max_v);
-    auto bound_x = min(255, ceil((min(w, max(abs(min_v), abs(max_v))) * 128. / 127.) / 4) * 4);
+    auto bound_x = min(255., ceil((min(w, max(abs(min_v), abs(max_v))) * 128. / 127.) / 4) * 4);
     minMaxLoc(flow_y, &min_v, &max_v);
-    auto bound_y = min(255, ceil((min(h, max(abs(min_v), abs(max_v))) * 128. / 127.) / 4) * 4);
+    auto bound_y = min(255., ceil((min(h, max(abs(min_v), abs(max_v))) * 128. / 127.) / 4) * 4);
     if (int(bound_x) % 8 == 0){
         bound_x += 4;
     }
