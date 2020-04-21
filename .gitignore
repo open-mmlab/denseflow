@@ -11,3 +11,4 @@ logs/
 *.mp4
 *.h5
 data
+*.log
