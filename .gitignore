@@ -12,3 +12,4 @@ logs/
 *.h5
 data
 *.log
+*.txt
