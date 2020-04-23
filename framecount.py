@@ -36,18 +36,18 @@ def frame_count_ffmpeg_count(filename):
 
 
 def frame_count_ffmpeg_decode(filename):
-    result = subprocess.run(['ffmpeg', '-i', filename, '/dev/shm/img-%3d.jpg'],
+    result = subprocess.run(['ffmpeg', '-i', filename, '/dev/shm/img-%5d.jpg'],
                             stderr=subprocess.PIPE,
                             encoding='utf8',
                             check=True)
-    m = re.search(r'frame=\s*(\d+) ', result.stderr)
-    return m.groups()[0]
+    m = re.findall(r'frame=\s*(\d+) ', result.stderr)
+    return m[-1]
 
 
 def frame_count_denseflow_rgb(filename):
     result = subprocess.run([
         'srun', '--partition=pat_mars', '--gres=gpu:1', '-n1', '--ntasks-per-node=1', '--job-name=ha', '-x',
-        'SH-IDC1-10-198-4-108', '--kill-on-bad-exit=1', 'denseflow', filename
+        'SH-IDC1-10-198-4-108', '--kill-on-bad-exit=1', 'denseflow', '-o=/dev/shm/', filename
     ],
                             stdout=subprocess.PIPE,
                             encoding='utf8',
@@ -59,7 +59,7 @@ def frame_count_denseflow_rgb(filename):
 def frame_count_denseflow_flow(filename):
     result = subprocess.run([
         'srun', '--partition=pat_mars', '--gres=gpu:1', '-n1', '--ntasks-per-node=1', '--job-name=ha', '-x',
-        'SH-IDC1-10-198-4-108', '--kill-on-bad-exit=1', 'denseflow', '-s=1', '-st=png', filename
+        'SH-IDC1-10-198-4-108', '--kill-on-bad-exit=1', 'denseflow', '-s=1', '-st=png', '-o=/dev/shm/', filename
     ],
                             stdout=subprocess.PIPE,
                             encoding='utf8',
@@ -76,12 +76,12 @@ def frame_count_cv2_query(filename):
 
 def frame_count_cv2_count(filename):
     cap = cv2.VideoCapture(filename)
-    has_next, frame = cap.read()
-    v = []
+    n = 0
+    has_next, _ = cap.read()
     while has_next:
-        v.append(frame)
-        has_next, frame = cap.read()
-    return len(v)
+        n += 1
+        has_next, _ = cap.read()
+    return n
 
 
 def frame_count_decord(filename):
@@ -105,7 +105,7 @@ print(f'ffmpeg decode frames {frame_count_ffmpeg_decode(video_path)}')
 print(f'deseflow rgb frames {frame_count_denseflow_rgb(video_path)}')
 print(f'deseflow flow frames {frame_count_denseflow_flow(video_path)}')
 print(f'cv2 query frames {frame_count_cv2_query(video_path)}')
-print(f'cv2 count frames {frame_count_cv2_count(video_path)}')
 print(f'decord frames {frame_count_decord(video_path)}')
 print(f'pyav frames {frame_count_pyav(video_path)}')
 print(f'torchvision frames {frame_count_torchvision(video_path)}')
+print(f'cv2 count frames {frame_count_cv2_count(video_path)}')
