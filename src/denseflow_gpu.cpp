@@ -100,6 +100,7 @@ int DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &fr
         if (use_frames) {
             frames_path.erase(frames_path.begin(), frames_path.begin() + N);
         } else {
+            // TODO: WARN: DO NOT USE CAP_PROP_POS_FRAMES
             video_stream.set(cv::CAP_PROP_POS_FRAMES, video_frame_idx);
         }
     }
@@ -207,6 +208,7 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
         if (use_frames) {
             frames_path.erase(frames_path.begin(), frames_path.begin() + M);
         } else {
+            // TODO: WARN: DO NOT USE CAP_PROP_POS_FRAMES
             video_stream.set(cv::CAP_PROP_POS_FRAMES, video_flow_idx);
         }
     }
