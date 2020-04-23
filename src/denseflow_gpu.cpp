@@ -179,10 +179,14 @@ bool DenseFlow::load_frames_batch(VideoCapture &video_stream, const vector<path>
 int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
                                  const Size &size, path output_dir, bool is_last, bool verbose) {
     int video_flow_idx = 0;
+    vector<Mat> frames_gray_padding;
     while (true) {
         vector<Mat> frames_gray;
         bool is_open = load_frames_batch(video_stream, frames_path, use_frames, frames_gray, do_resize, size, true);
-        FlowBuffer frames_gray_item(frames_gray, output_dir, video_flow_idx, !is_open);
+        vector<Mat> padded_frames_gray(frames_gray_padding.size() + frames_gray.size());
+        copy(frames_gray_padding.begin(), frames_gray_padding.end(), padded_frames_gray.begin());
+        copy(frames_gray.begin(), frames_gray.end(), padded_frames_gray.begin() + frames_gray_padding.size());
+        FlowBuffer frames_gray_item(padded_frames_gray, output_dir, video_flow_idx, !is_open);
         unique_lock<mutex> lock(frames_gray_mtx);
         while (frames_gray_queue.size() == frames_gray_maxsize) {
             if (verbose)
@@ -197,6 +201,9 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
         if (is_last && !is_open)
             ready_to_exit1 = true;
         lock.unlock();
+        frames_gray_padding.resize(step);
+        copy(frames_gray.end() - step, frames_gray.end(), frames_gray_padding.begin());
+
         int M = frames_gray.size() - abs(step);
         video_flow_idx += M;
         // read done a video
@@ -204,12 +211,9 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
             break;
         if (use_frames) {
             frames_path.erase(frames_path.begin(), frames_path.begin() + M);
-        } else {
-            // TODO: WARN: DO NOT USE CAP_PROP_POS_FRAMES
-            video_stream.set(cv::CAP_PROP_POS_FRAMES, video_flow_idx);
         }
     }
-    return video_flow_idx + abs(step);
+    return video_flow_idx + abs(step) + 1;
 }
 
 void DenseFlow::load_frames(bool use_frames, string save_type, bool verbose) {
