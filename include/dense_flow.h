@@ -92,8 +92,8 @@ class DenseFlow {
           is_record(is_record), save_type(save_type) {
         if (!check_param())
             throw std::runtime_error("check init param error.");
-        batch_maxsize = 512;
-        frames_gray_maxsize = flows_maxsize = 512;
+        batch_maxsize = 128;
+        frames_gray_maxsize = flows_maxsize = 3;
         ready_to_exit1 = ready_to_exit2 = ready_to_exit3 = false;
         total_frames = 0;
         total_flows = 0;
