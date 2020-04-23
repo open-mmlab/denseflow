@@ -204,7 +204,7 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
         frames_gray_padding.resize(step);
         copy(frames_gray.end() - step, frames_gray.end(), frames_gray_padding.begin());
 
-        int M = frames_gray.size() - abs(step);
+        int M = padded_frames_gray.size() - abs(step);
         video_flow_idx += M;
         // read done a video
         if (!is_open)
@@ -213,7 +213,7 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
             frames_path.erase(frames_path.begin(), frames_path.begin() + M);
         }
     }
-    return video_flow_idx + abs(step) + 1;
+    return video_flow_idx + abs(step);
 }
 
 void DenseFlow::load_frames(bool use_frames, string save_type, bool verbose) {
