@@ -91,7 +91,7 @@ errors = @showprogress "batches " pmap(batches) do batch
             Shell.run("""
             cd '$(batchdir)'
             ffmpeg -hide_banner -loglevel panic -i 'png/$(v)/flow_%05d.png' -c:v libx265 -crf 5 -x265-params log-level=error 'out/$(v).mp4' -y
-            s3cmd put 'out/$(v).mp4' '$(joinpath(dst, "$(v).mp4"))' -q
+            s3cmd put 'out/$(v).mp4' '$(joinpath(dst, "$(v)_flow.mp4"))' -q
             """)
             println("encoded & uploaded $v")
         end

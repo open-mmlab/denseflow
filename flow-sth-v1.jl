@@ -23,7 +23,7 @@ s = ArgParseSettings()
     "--list", "-l"
         help = "list file"
         arg_type = String
-        default = "something-something-v1_full_list.txt"
+        default = "something-something-v1_flow_full_list.txt"
     "--split"
         help = "which split to process"
         arg_type = Int
@@ -31,7 +31,7 @@ s = ArgParseSettings()
     "--splits"
         help = "How many splits"
         arg_type = Int
-        default = 2
+        default = 4
 end
 args = parse_args(s)
 
@@ -95,7 +95,7 @@ errors = @showprogress "batches " pmap(batches) do batch
             Shell.run("""
             cd '$(batchdir)'
             ffmpeg -hide_banner -loglevel panic -i 'png/$(v)/flow_%05d.png' -c:v libx265 -crf 10 -x265-params log-level=error 'out/$(v).mp4' -y
-            s3cmd put 'out/$(v).mp4' '$(joinpath(dst, "$(v).mp4"))' -q
+            s3cmd put 'out/$(v).mp4' '$(joinpath(dst, "$(v)_flow.mp4"))' -q
             """)
             println("encoded & uploaded $v")
         end
