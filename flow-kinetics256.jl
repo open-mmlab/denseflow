@@ -23,7 +23,7 @@ s = ArgParseSettings()
     "--list", "-l"
         help = "list file"
         arg_type = String
-        default = "kinetics400_256_full_list.txt"
+        default = "kinetics400_256_flow_full_list.txt"
     "--split"
         help = "which split to process"
         arg_type = Int
