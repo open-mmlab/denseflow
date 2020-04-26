@@ -12,15 +12,15 @@ GPUS = SharedArray{Bool}(8)
 
 s = ArgParseSettings()
 @add_arg_table! s begin
-    "--src", "-s"
+    "--src"
         help = "source dir"
         arg_type = String
         default = "s3://lizz.ssd/datasets/something-something-v1"
-    "--dst", "-t"
+    "--dst"
         help = "target dir"
         arg_type = String
         default = "s3://lizz.ssd/datasets/something-something-v1_flow_p2"
-    "--list", "-l"
+    "--list"
         help = "list file"
         arg_type = String
         default = "something-something-v1_flow_full_list.txt"
@@ -44,7 +44,7 @@ workdir = "/dev/shm/zz"
 
 mkpath(workdir)
 
-videos = splitobs(readdlm(listfile)[:, 1], at = tuple(ones(splits - 1) / splits...))[split]
+videos = replace.(splitobs(readdlm(listfile)[:, 1], at = tuple(ones(splits - 1) / splits...))[split], "_flow" => "")
 println("processing split $split/$splits, $(length(videos)) videos")
 
 # make batcehs
@@ -94,7 +94,7 @@ errors = @showprogress "batches " pmap(batches) do batch
         for v in names
             Shell.run("""
             cd '$(batchdir)'
-            ffmpeg -hide_banner -loglevel panic -i 'png/$(v)/flow_%05d.png' -c:v libx265 -crf 10 -x265-params log-level=error 'out/$(v).mp4' -y
+            ffmpeg -hide_banner -loglevel panic -i 'png/$(v)/flow_p2_%05d.png' -c:v libx265 -crf 10 -x265-params log-level=error 'out/$(v).mp4' -y
             s3cmd put 'out/$(v).mp4' '$(joinpath(dst, "$(v)_flow_p2.mp4"))' -q
             """)
             println("encoded & uploaded $v")
