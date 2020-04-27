@@ -202,7 +202,7 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
             ready_to_exit1 = true;
         lock.unlock();
         frames_gray_padding.resize(abs(step));
-        copy(frames_gray.end() - abs(step), frames_gray.end(), frames_gray_padding.begin());
+        copy(padded_frames_gray.end() - abs(step), padded_frames_gray.end(), frames_gray_padding.begin());
 
         int M = padded_frames_gray.size() - abs(step);
         video_flow_idx += M;
