@@ -31,7 +31,7 @@ s = ArgParseSettings()
     "--splits"
         help = "How many splits"
         arg_type = Int
-        default = 4
+        default = 5
 end
 args = parse_args(s)
 
