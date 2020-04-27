@@ -41,6 +41,7 @@ listfile = args["list"]
 split = args["split"]
 splits = args["splits"]
 workdir = "/dev/shm/zz"
+rm(workdir, recursive=true, force=true)
 
 mkpath(workdir)
 
@@ -50,7 +51,7 @@ println("processing split $split/$splits, $(length(videos)) videos")
 # make batcehs
 bs = 64
 nbatch = Int(ceil(length(videos) / bs))
-batches = nbatch == 1 ? [videos] : splitobs(videos, at = ntuple(i->1 / nbatch, nbatch - 1))
+batches = nbatch == 1 ? [videos] : bs == 1 ? [[x] for x in videos] : splitobs(videos, at = ntuple(i->1 / nbatch, nbatch - 1))
 println("there are $(length(batches)) batches, bs $(bs)")
 
 errors = @showprogress "batches " pmap(batches) do batch
