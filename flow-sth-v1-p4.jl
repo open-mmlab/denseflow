@@ -45,7 +45,9 @@ rm(workdir, recursive=true, force=true)
 
 mkpath(workdir)
 
-videos = replace.(splitobs(readdlm(listfile)[:, 1], at = tuple(ones(splits - 1) / splits...))[split], "_flow" => "")
+allvideos = readdlm(listfile)[:, 1]
+videos = splits == 1 ? allvideos : splitobs(allvideos, at = tuple(ones(splits - 1) / splits...))[split]
+videos = replace.(videos, "_flow" => "")
 println("processing split $split/$splits, $(length(videos)) videos")
 
 # make batcehs

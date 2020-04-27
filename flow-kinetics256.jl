@@ -23,7 +23,7 @@ s = ArgParseSettings()
     "--list", "-l"
         help = "list file"
         arg_type = String
-        default = "kinetics400_256_flow_full_list.txt"
+        default = "kinetics400_256_flow_static.txt"
     "--split"
         help = "which split to process"
         arg_type = Int
@@ -31,7 +31,7 @@ s = ArgParseSettings()
     "--splits"
         help = "How many splits"
         arg_type = Int
-        default = 5
+        default = 1
 end
 args = parse_args(s)
 
@@ -45,11 +45,12 @@ rm(workdir, recursive=true, force=true)
 
 mkpath(workdir)
 
-videos = splitobs(readdlm(listfile)[:, 1], at = tuple(ones(splits - 1) / splits...))[split]
+allvideos = readdlm(listfile)[:, 1]
+videos = splits == 1 ? allvideos : splitobs(allvideos, at = tuple(ones(splits - 1) / splits...))[split]
 println("processing split $split/$splits, $(length(videos)) videos")
 
 # make batcehs
-bs = 64
+bs = 1
 nbatch = Int(ceil(length(videos) / bs))
 batches = nbatch == 1 ? [videos] : bs == 1 ? [[x] for x in videos] : splitobs(videos, at = ntuple(i->1 / nbatch, nbatch - 1))
 println("there are $(length(batches)) batches, bs $(bs)")

@@ -40,7 +40,8 @@ rm(workdir, recursive=true, force=true)
 
 mkpath(workdir)
 
-videos = splitobs(readdlm("kinetics_merge_flow_remain.txt")[:, 1], at = tuple(ones(splits - 1) / splits...))[split]
+allvideos = readdlm("kinetics_merge_flow_remain.txt")[:, 1]
+videos = splits == 1 ? allvideos : splitobs(allvideos, at = tuple(ones(splits - 1) / splits...))[split]
 # videos = splitobs(readdlm("annotation/full_list.txt")[:, 1], at = tuple(ones(splits - 1) / splits...))[split]
 println("processing split $split/$splits, $(length(videos)) videos")
 
