@@ -29,6 +29,8 @@ make -j
 make install
 ```
 
+If you have trouble setting up building environments, scripts in [INSTALL](INSTALL.md) might be helpful.
+
 ## Usage
 
 ### Extract optical flow of a single video
