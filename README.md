@@ -10,17 +10,9 @@ Extracting dense flow field given a video.
 - faster, 40% faster (by parallelize IO & computation)
 - record the progress when extract a list of videos, and resume by simply running the same command again (idempotent)
 
-## Term of Usage
-
-- Star the repo before clone
-- File issue if it does not work
-- Unstar if you feel it is unmaintained
-
 ## Install
 
 ### Dependencies:
-
-> Look here https://github.com/innerlee/setup for simple install scripts!
 
 - OpenCV:
 [opencv3](https://www.learnopencv.com/install-opencv3-on-ubuntu/) |
@@ -107,9 +99,9 @@ Usage: denseflow [params] input
                 filename of video or folder of frames or a list.txt of those
 ```
 
-## Credits
+## Acknowledgement
 
-Modified based on [yuanjun's fork of dense_flow](https://github.com/yjxiong/dense_flow).
+Rewritten based on [yuanjun's fork of dense_flow](https://github.com/yjxiong/dense_flow).
 
 ### Main Authors:
 
