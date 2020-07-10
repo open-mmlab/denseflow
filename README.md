@@ -101,11 +101,6 @@ Usage: denseflow [params] input
                 filename of video or folder of frames or a list.txt of those
 ```
 
-## Acknowledgement
-
-Rewritten based on [yuanjun's fork of dense_flow](https://github.com/yjxiong/dense_flow).
-
-
 ## Citation
 
 If you use this tool in your research, please cite this project.
@@ -118,3 +113,7 @@ If you use this tool in your research, please cite this project.
   year =         {2020}
 }
 ```
+
+## Acknowledgement
+
+Rewritten based on [yuanjun's fork of dense_flow](https://github.com/yjxiong/dense_flow).
