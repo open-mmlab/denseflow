@@ -105,6 +105,16 @@ Usage: denseflow [params] input
 
 Rewritten based on [yuanjun's fork of dense_flow](https://github.com/yjxiong/dense_flow).
 
-### Main Authors:
 
-Shiguang Wang, Zhizhong Li
+## Citation
+
+If you use this tool in your research, please cite this project.
+
+```
+@misc{denseflow,
+  author =       {Wang, Shiguang and Li, Zhizhong and Zhao, Yue and Xiong, Yuanjun and Wang, Limin and Lin, Dahua},
+  title =        {{denseflow}},
+  howpublished = {\url{https://github.com/open-mmlab/denseflow}},
+  year =         {2020}
+}
+```
