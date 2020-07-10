@@ -64,6 +64,7 @@ class DenseFlow {
                              const Size &size, path output_dir, bool verbose);
 
   public:
+    string supported_exts = ".jpg|.png|.jpeg|.JPG|.PNG|.JPEG";
     static void load_frames_wrap(void *arg, bool use_frames, string save_type, bool verbose) {
         return static_cast<DenseFlow *>(arg)->load_frames(use_frames, save_type, verbose);
     }
