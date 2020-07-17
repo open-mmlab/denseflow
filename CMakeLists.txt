@@ -67,5 +67,6 @@ target_link_libraries(denseflow ${DenseFlow_LIB})
 install (
     TARGETS denseflow ${DenseFlow_LIB}
     RUNTIME DESTINATION bin
+    ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
 )
