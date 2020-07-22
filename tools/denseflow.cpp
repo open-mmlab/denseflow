@@ -8,7 +8,7 @@ int main(int argc, char **argv) {
         const char *keys = {"{ h help         |      | print help message }"
                             "{ @input         |      | filename of video or folder of frames or a list.txt of those }"
                             "{ o outputDir    | .    | root dir of output }"
-                            "{ a algorithm    | tvl1 | optical flow algorithm (nv/tvl1/farn/brox) }"
+                            "{ a algorithm    | tvl1 | optical flow algorithm (nv/tvl1/farn/brox/flownet2) }"
                             "{ s step         | 0    | right - left (0 for img, non-0 for flow) }"
                             "{ b bound        | 32   | maximum of optical flow }"
                             "{ nw newWidth    | 0    | new width }"
