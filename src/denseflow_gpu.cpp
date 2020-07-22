@@ -23,6 +23,13 @@ bool DenseFlow::check_param() {
         cout << algorithm << " not supported!" << endl;
         return false;
     }
+    if (algorithm == "flownet2") {  // flownet2 needs opencv>=4.4
+        if (CV_MAJOR_VERSION < 4) {
+          return false;
+        } else if (CV_MAJOR_VERSION ==4 && CV_MINOR_VERSION < 4) {
+          return false;
+        }
+    }
     if (bound <= 0) {
         cout << "bound should > 0!" << endl;
         return false;
@@ -312,8 +319,8 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     } else if (algorithm == "flownet2") {
         if (access("modelzoo/FlowNet2_weights.caffemodel", F_OK) != 0) {
           throw std::runtime_error("FlowNet2_weights.caffemodel not found! "
-                                   "Please download the converted .caffemodel model from"
-                                   "https://drive.google.com/open?id=16qvE9VNmU39NttpZwZs81Ga8VYQJDaWZ"
+                                   "Please download the converted .caffemodel model from "
+                                   "https://drive.google.com/open?id=16qvE9VNmU39NttpZwZs81Ga8VYQJDaWZ "
                                    "and put it in ${denseflow_path}/modelzoo/");
         }
         net = dnn::readNetFromCaffe("modelzoo/FlowNet2_deploy.prototxt",
