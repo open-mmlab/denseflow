@@ -310,6 +310,12 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     } else if (algorithm == "brox") {
         alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
     } else if (algorithm == "flownet2") {
+        if (access("modelzoo/FlowNet2_weights.caffemodel", F_OK) != 0) {
+          throw std::runtime_error("FlowNet2_weights.caffemodel not found! "
+                                   "Please download the converted .caffemodel model from"
+                                   "https://drive.google.com/open?id=16qvE9VNmU39NttpZwZs81Ga8VYQJDaWZ"
+                                   "and put it in ${denseflow_path}/modelzoo/");
+        }
         net = dnn::readNetFromCaffe("modelzoo/FlowNet2_deploy.prototxt",
                                     "modelzoo/FlowNet2_weights.caffemodel");
         net.setPreferableBackend(dnn::DNN_BACKEND_CUDA);
