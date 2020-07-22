@@ -4,7 +4,12 @@ Extracting dense flow field given a video.
 
 ## Features
 
-- support multiple optical flow algorithms, including Nvidia hardware optical flow
+- support multiple optical flow algorithms
+  - Nvidia hardware optical flow
+  - TV-L1
+  - Farneback
+  - Brox
+  - FlowNet2 (OpenCV>=4.4)
 - support single video (or a frame folder) / a list of videos (or a list of frame folders) as input
 - support multiple output types (image, hdf5)
 - faster, 40% faster (by parallelize IO & computation)
@@ -71,7 +76,7 @@ GPU optical flow extraction.
 Usage: denseflow [params] input
 
         -a, --algorithm (value:tvl1)
-                optical flow algorithm (nv/tvl1/farn/brox)
+                optical flow algorithm (nv/tvl1/farn/brox/flownet2)
         -b, --bound (value:32)
                 maximum of optical flow
         --cf, --classFolder
