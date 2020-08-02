@@ -39,29 +39,70 @@ If you have trouble setting up building environments, scripts in [INSTALL](INSTA
 denseflow test.avi -b=20 -a=tvl1 -s=1 -v
 ```
 
-- `test.avi`: input video / videolist.txt
-- `tmp`: folder containing RGB images and optical flow images
-- `dir`: output generated images to folder.
-- `tvl1`: optical flow algorithm
-- `v`: verbose
-- `s`: step, extract frames only when step=0
+- `test.avi`: input video
+- `-b=20` bound set to 20
+- `-a=tvl1` algorithm is tvl1
+- `-s=1` step is 1, ie flow of adjacent frames
+- `-v`: verbose
 
 ### Extract optical flow of a list of videos
-
-* resize
-* class folder
-* input image
 
 ```bash
 denseflow videolist.txt -b=20 -a=tvl1 -s=1 -v
 ```
 
-- `videolist.txt`: input video / videolist.txt
-- `tmp`: folder containing RGB images and optical flow images
-- `dir`: output generated images to folder.
-- `tvl1`: optical flow algorithm
-- `v`: verbose
-- `s`: step, extract frames only, when step=0
+- `videolist.txt`: a list of video paths
+- `-b=20` bound set to 20
+- `-a=tvl1` algorithm is tvl1
+- `-s=1` step is 1, ie flow of adjacent frames
+- `-v`: verbose
+
+### Extract optical flow of a list of videos, each video is under a class folder
+
+```bash
+denseflow videolist.txt -b=20 -a=tvl1 -s=1 -cf -v
+```
+
+- `videolist.txt`: a list of video paths
+- `-b=20` bound set to 20
+- `-a=tvl1` algorithm is tvl1
+- `-s=1` step is 1, ie flow of adjacent frames
+- `-cf` this switch means that parent folder of the video is a class name
+- `-v`: verbose
+
+### Extract optical flow of a folder of frame images
+
+```bash
+denseflow test -b=20 -a=tvl1 -s=1 -if -v
+```
+
+- `test`: folder of the frame images
+- `-b=20` bound set to 20
+- `-a=tvl1` algorithm is tvl1
+- `-s=1` step is 1, ie flow of adjacent frames
+- `-if` indicates that inputs are frames 
+- `-v`: verbose
+
+### Extract frames of a single video
+
+```bash
+denseflow test.avi -s=0 -v
+```
+
+- `test.avi`: input video
+- `-s=0` step 0 is reserved for extracting frames
+- `-v`: verbose
+
+### Extract frames of a list of videos
+
+```bash
+denseflow videolist.txt -s=0 -v
+```
+
+- `videolist.txt`: a list of video paths
+- `-s=1` step is 1, ie flow of adjacent frames
+- `-s=0` step 0 is reserved for extracting frames
+- `-v`: verbose
 
 ## Documentation
 
