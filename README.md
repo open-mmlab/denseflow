@@ -14,15 +14,15 @@ Extracting dense flow field given a video.
 
 ### Dependencies:
 
-- OpenCV:
+- CUDA (driver version > 400)
+- OpenCV (with CUDA support):
 [opencv3](https://www.learnopencv.com/install-opencv3-on-ubuntu/) |
 [opencv4](https://www.learnopencv.com/install-opencv-4-on-ubuntu-16-04/)
-- CUDA (driver version > 400)
 - Boost
 - HDF5 (Optional)
 
 ```bash
-git clone https://github.com/innerlee/denseflow
+git clone https://github.com/open-mmlab/denseflow.git
 mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=$HOME/app -DUSE_HDF5=no -DUSE_NVFLOW=no ..
 make -j
