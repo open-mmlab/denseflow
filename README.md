@@ -131,6 +131,8 @@ Usage: denseflow [params] input
                 new width
         -o, --outputDir (value:.)
                 root dir of output
+        -off, --offset (value:0)
+                offset of the output frame file
         -s, --step (value:0)
                 right - left (0 for img, non-0 for flow)
         --saveType, --st (value:jpg)
