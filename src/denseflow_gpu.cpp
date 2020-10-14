@@ -79,9 +79,9 @@ bool DenseFlow::get_new_size(const VideoCapture &video_stream, const vector<path
     return do_resize;
 }
 
-int DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames,
+int DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, int offset, bool use_frames,
                                     bool do_resize, const Size &size, path output_dir, bool verbose) {
-    int video_frame_idx = 0;
+    int video_frame_idx = 0 + offset;
     while (true) {
         vector<Mat> frames_color;
         bool is_open = load_frames_batch(video_stream, frames_path, use_frames, frames_color, do_resize, size, false);
@@ -101,10 +101,11 @@ int DenseFlow::extract_frames_video(VideoCapture &video_stream, vector<path> &fr
             frames_path.erase(frames_path.begin(), frames_path.begin() + N);
         }
     }
+    video_frame_idx -= offset;
     return video_frame_idx;
 }
 
-void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
+void DenseFlow::extract_frames_only(int offset, bool use_frames, bool verbose) {
     for (size_t i = 0; i < video_paths.size(); i++) {
         path video_path = video_paths[i];
         path output_dir = output_dirs[i];
@@ -134,7 +135,7 @@ void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
         bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
         if (verbose)
             cout << video_path << ", frames ≈ " << frames_num << endl;
-        frames_num = extract_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir, verbose);
+        frames_num = extract_frames_video(video_stream, frames_path, offset, use_frames, do_resize, size, output_dir, verbose);
         total_frames += frames_num; // exact frame count
         if (!use_frames)
             video_stream.release();
@@ -176,9 +177,9 @@ bool DenseFlow::load_frames_batch(VideoCapture &video_stream, const vector<path>
     return true;
 }
 
-int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
+int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, int offset, bool use_frames, bool do_resize,
                                  const Size &size, path output_dir, bool is_last, bool verbose) {
-    int video_flow_idx = 0;
+    int video_flow_idx = 0 + offset;
     vector<Mat> frames_gray_padding;
     while (true) {
         vector<Mat> frames_gray;
@@ -213,10 +214,11 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
             frames_path.erase(frames_path.begin(), frames_path.begin() + M);
         }
     }
+    video_flow_idx -= offset;
     return video_flow_idx + abs(step);
 }
 
-void DenseFlow::load_frames(bool use_frames, string save_type, bool verbose) {
+void DenseFlow::load_frames(int offset, bool use_frames, string save_type, bool verbose) {
     for (size_t i = 0; i < video_paths.size(); i++) {
         path video_path = video_paths[i];
         path output_dir = output_dirs[i];
@@ -267,7 +269,7 @@ void DenseFlow::load_frames(bool use_frames, string save_type, bool verbose) {
         bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
         if (verbose)
             cout << video_path << ", frames ≈ " << frames_num << endl;
-        frames_num = load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir,
+        frames_num = load_frames_video(video_stream, frames_path, offset, use_frames, do_resize, size, output_dir,
                                        i == video_paths.size() - 1, verbose);
         total_frames += frames_num; // exact frame count
         if (!use_frames)
@@ -476,17 +478,17 @@ void DenseFlow::encode_save(string save_type, bool verbose) {
         cout << "post process exit." << endl;
 }
 
-void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
+void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, int offset,
                            int new_width, int new_height, int new_short, bool has_class, bool use_frames,
                            string save_type, bool is_record, bool verbose) {
     setDevice(0);
-    DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
+    DenseFlow flow_video_gpu(video_paths, output_dirs, algorithm, step, bound, offset, new_width, new_height, new_short,
                              has_class, is_record, save_type);
     double start_t = CurrentSeconds();
     if (step == 0) {
-        flow_video_gpu.extract_frames_only(use_frames, verbose);
+        flow_video_gpu.extract_frames_only(offset, use_frames, verbose);
     } else {
-        flow_video_gpu.launch(use_frames, save_type, verbose);
+        flow_video_gpu.launch(offset, use_frames, save_type, verbose);
     }
     double end_t = CurrentSeconds();
     unsigned long N = flow_video_gpu.get_processed_total_frames();
