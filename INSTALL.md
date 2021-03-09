@@ -21,8 +21,10 @@ you can follow the example below to compile.
 
 ```bash
 # ZZROOT is the root dir of all the installation
-# you may put this line into your .bashrc
+# you may put these lines into your .bashrc/.zshrc/etc.
 export ZZROOT=$HOME/app
+export PATH=$ZZROOT/bin:$PATH
+export LD_LIBRARY_PATH=$ZZROOT/lib:$ZZROOT/lib64:$LD_LIBRARY_PATH
 
 # fetch install scripts
 git clone https://github.com/innerlee/setup.git
