@@ -21,7 +21,7 @@ you can follow the example below to compile.
 
 ```bash
 # ZZROOT is the root dir of all the installation
-# you may put these lines into your .bashrc/.zshrc/etc.
+# you may put these lines into your `.bashrc` or `.zshrc`.
 export ZZROOT=$HOME/app
 export PATH=$ZZROOT/bin:$PATH
 export LD_LIBRARY_PATH=$ZZROOT/lib:$ZZROOT/lib64:$LD_LIBRARY_PATH
