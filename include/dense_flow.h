@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound,
+void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, int offset,
                            int new_width, int new_height, int new_short, bool has_class, bool use_frames,
                            string save_type, bool is_record, bool verbose);
 
@@ -25,6 +25,7 @@ class DenseFlow {
     string save_type;
     int step;
     int bound;
+    int offset;
     int new_width;
     int new_height;
     int new_short;
@@ -53,19 +54,19 @@ class DenseFlow {
                       Size &new_size, int &frames_num);
     bool load_frames_batch(VideoCapture &video_stream, const vector<path> &frames_path, bool use_frames,
                            vector<Mat> &frames_gray, bool do_resize, const Size &size, bool to_gray);
-    int load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
+    int load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, int offset, bool use_frames, bool do_resize,
                           const Size &size, path output_dir, bool is_last, bool verbose);
     void calc_optflows_imp(const FlowBuffer &frames_gray, const string &algorithm, int step, bool verbose,
                            Stream &stream = Stream::Null());
-    void load_frames(bool use_frames, string save_type, bool verbose = true);
+    void load_frames(int offset, bool use_frames, string save_type, bool verbose = true);
     void calc_optflows(bool verbose = true);
     void encode_save(string save_type, bool verbose = true);
-    int extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
+    int extract_frames_video(VideoCapture &video_stream, vector<path> &frames_path, int offset, bool use_frames, bool do_resize,
                              const Size &size, path output_dir, bool verbose);
 
   public:
-    static void load_frames_wrap(void *arg, bool use_frames, string save_type, bool verbose) {
-        return static_cast<DenseFlow *>(arg)->load_frames(use_frames, save_type, verbose);
+    static void load_frames_wrap(void *arg, int offset, bool use_frames, string save_type, bool verbose) {
+        return static_cast<DenseFlow *>(arg)->load_frames(offset, use_frames, save_type, verbose);
     }
     static void calc_optflows_wrap(void *arg, bool verbose) {
         return static_cast<DenseFlow *>(arg)->calc_optflows(verbose);
@@ -73,21 +74,21 @@ class DenseFlow {
     static void encode_save_wrap(void *arg, string save_type, bool verbose) {
         return static_cast<DenseFlow *>(arg)->encode_save(save_type, verbose);
     }
-    void launch(bool use_frames, string save_type, bool verbose) {
-        thread thread_load_frames(load_frames_wrap, this, use_frames, save_type, verbose);
+    void launch(int offset, bool use_frames, string save_type, bool verbose) {
+        thread thread_load_frames(load_frames_wrap, this, offset, use_frames, save_type, verbose);
         thread thread_calc_optflow(calc_optflows_wrap, this, false);
         thread thread_encode_save(encode_save_wrap, this, save_type, false);
         thread_load_frames.join();
         thread_calc_optflow.join();
         thread_encode_save.join();
     }
-    void extract_frames_only(bool use_frames, bool verbose);
+    void extract_frames_only(int offset, bool use_frames, bool verbose);
     unsigned long get_processed_total_frames() { return total_frames; }
     unsigned long get_processed_total_flows() { return total_flows; }
 
-    DenseFlow(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, int new_width,
+    DenseFlow(vector<path> video_paths, vector<path> output_dirs, string algorithm, int step, int bound, int offset, int new_width,
               int new_height, int new_short, bool has_class, bool is_record, string save_type)
-        : video_paths(video_paths), output_dirs(output_dirs), algorithm(algorithm), step(step), bound(bound),
+        : video_paths(video_paths), output_dirs(output_dirs), algorithm(algorithm), step(step), bound(bound), offset(offset),
           new_width(new_width), new_height(new_height), new_short(new_short), has_class(has_class),
           is_record(is_record), save_type(save_type) {
         if (!check_param())

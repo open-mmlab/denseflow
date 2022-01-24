@@ -18,7 +18,8 @@ int main(int argc, char **argv) {
                             "{ if inputFrames |      | inputs are frames }"
                             "{ st saveType    | jpg  | save format type (png/h5/jpg) }"
                             "{ f force        |      | regardless of the marked .done file }"
-                            "{ v verbose      |      | verbose }"};
+                            "{ v verbose      |      | verbose }"
+                            "{ off offset     | 0    | offset of the output frame file }"};
 
         CommandLineParser cmd(argc, argv, keys);
 
@@ -45,6 +46,7 @@ int main(int argc, char **argv) {
         bool force = cmd.has("force");
         string save_type = cmd.get<string>("saveType");
         bool verbose = cmd.has("verbose");
+        int offset = cmd.has("offset");
 
         Mat::setDefaultAllocator(HostMem::getAllocator(HostMem::AllocType::PAGE_LOCKED));
 
@@ -86,7 +88,7 @@ int main(int argc, char **argv) {
             output_dirs.push_back(outdir);
         }
         if (video_paths.size() > 0) {
-            calcDenseFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, new_width, new_height, new_short,
+            calcDenseFlowVideoGPU(video_paths, output_dirs, algorithm, step, bound, offset, new_width, new_height, new_short,
                                   has_class, use_frames, save_type, is_record, verbose);
         }
 
