@@ -1,6 +1,7 @@
 #include "dense_flow.h"
 #include "opencv2/cudaarithm.hpp"
 #include "opencv2/cudaoptflow.hpp"
+#include "opencv2/dnn.hpp"
 #include "utils.h"
 #include <sys/syscall.h>
 #include <time.h>
@@ -17,9 +18,17 @@ bool DenseFlow::check_param() {
             return false;
         }
     }
-    if (algorithm != "nv" && algorithm != "tvl1" && algorithm != "farn" && algorithm != "brox") {
+    if (algorithm != "nv" && algorithm != "tvl1" &&
+        algorithm != "farn" && algorithm != "brox" && algorithm != "flownet2") {
         cout << algorithm << " not supported!" << endl;
         return false;
+    }
+    if (algorithm == "flownet2") {  // flownet2 needs opencv>=4.4
+        if (CV_MAJOR_VERSION < 4) {
+          return false;
+        } else if (CV_MAJOR_VERSION ==4 && CV_MINOR_VERSION < 4) {
+          return false;
+        }
     }
     if (bound <= 0) {
         cout << "bound should > 0!" << endl;
@@ -177,12 +186,17 @@ bool DenseFlow::load_frames_batch(VideoCapture &video_stream, const vector<path>
 }
 
 int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frames_path, bool use_frames, bool do_resize,
-                                 const Size &size, path output_dir, bool is_last, bool verbose) {
+                                 const Size &size, const string &algorithm, path output_dir, bool is_last, bool verbose) {
     int video_flow_idx = 0;
     vector<Mat> frames_gray_padding;
     while (true) {
         vector<Mat> frames_gray;
-        bool is_open = load_frames_batch(video_stream, frames_path, use_frames, frames_gray, do_resize, size, true);
+        bool is_open;
+        if (algorithm == "flownet2") {
+            is_open = load_frames_batch(video_stream, frames_path, use_frames, frames_gray, do_resize, size, false);
+        } else {
+            is_open = load_frames_batch(video_stream, frames_path, use_frames, frames_gray, do_resize, size, true);
+        }
         vector<Mat> padded_frames_gray(frames_gray_padding.size() + frames_gray.size());
         copy(frames_gray_padding.begin(), frames_gray_padding.end(), padded_frames_gray.begin());
         copy(frames_gray.begin(), frames_gray.end(), padded_frames_gray.begin() + frames_gray_padding.size());
@@ -216,7 +230,7 @@ int DenseFlow::load_frames_video(VideoCapture &video_stream, vector<path> &frame
     return video_flow_idx + abs(step);
 }
 
-void DenseFlow::load_frames(bool use_frames, string save_type, bool verbose) {
+void DenseFlow::load_frames(bool use_frames, string save_type, const string &algorithm, bool verbose) {
     for (size_t i = 0; i < video_paths.size(); i++) {
         path video_path = video_paths[i];
         path output_dir = output_dirs[i];
@@ -267,8 +281,8 @@ void DenseFlow::load_frames(bool use_frames, string save_type, bool verbose) {
         bool do_resize = get_new_size(video_stream, frames_path, use_frames, size, frames_num);
         if (verbose)
             cout << video_path << ", frames ≈ " << frames_num << endl;
-        frames_num = load_frames_video(video_stream, frames_path, use_frames, do_resize, size, output_dir,
-                                       i == video_paths.size() - 1, verbose);
+        frames_num = load_frames_video(video_stream, frames_path, use_frames, do_resize, size, algorithm,
+                                       output_dir, i == video_paths.size() - 1, verbose);
         total_frames += frames_num; // exact frame count
         if (!use_frames)
             video_stream.release();
@@ -285,6 +299,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     Ptr<cuda::FarnebackOpticalFlow> alg_farn;
     Ptr<cuda::OpticalFlowDual_TVL1> alg_tvl1;
     Ptr<cuda::BroxOpticalFlow> alg_brox;
+    dnn::Net net;
 #if (USE_NVFLOW)
     Ptr<NvidiaOpticalFlow_1_0> alg_nv;
 #endif
@@ -301,6 +316,17 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
         alg_farn = cuda::FarnebackOpticalFlow::create();
     } else if (algorithm == "brox") {
         alg_brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
+    } else if (algorithm == "flownet2") {
+        if (access("modelzoo/FlowNet2_weights.caffemodel", F_OK) != 0) {
+          throw std::runtime_error("FlowNet2_weights.caffemodel not found! "
+                                   "Please download the converted .caffemodel model from "
+                                   "https://drive.google.com/open?id=16qvE9VNmU39NttpZwZs81Ga8VYQJDaWZ "
+                                   "and put it in ${denseflow_path}/modelzoo/");
+        }
+        net = dnn::readNetFromCaffe("modelzoo/FlowNet2_deploy.prototxt",
+                                    "modelzoo/FlowNet2_weights.caffemodel");
+        net.setPreferableBackend(dnn::DNN_BACKEND_CUDA);
+        net.setPreferableTarget(dnn::DNN_TARGET_CUDA);
     }
 
     // compute
@@ -309,6 +335,7 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
     vector<Mat> flows(M);
     if (M > 0) {
         GpuMat flow_gpu;
+        Mat flow_cpu;
         GpuMat gray_a, gray_b;
         for (size_t i = 0; i < M; ++i) {
             Mat flow;
@@ -332,11 +359,31 @@ void DenseFlow::calc_optflows_imp(const FlowBuffer &frames_gray, const string &a
                     gray_a.convertTo(d_buf_0, CV_32F, 1.0 / 255.0, stream);
                     gray_b.convertTo(d_buf_1, CV_32F, 1.0 / 255.0, stream);
                     alg_brox->calc(d_buf_0, d_buf_1, flow_gpu, stream);
+                } else if (algorithm == "flownet2") {
+                    Mat gray_a_cpu;
+                    Mat gray_b_cpu;
+                    gray_a.download(gray_a_cpu);
+                    gray_b.download(gray_b_cpu);
+                    Mat input_0;
+                    Mat input_1;
+                    dnn::blobFromImage(gray_a_cpu, input_0, 1.0, Size(448, 320));
+                    dnn::blobFromImage(gray_b_cpu, input_1, 1.0, Size(448, 320));
+                    net.setInput(input_0, "img0");
+                    net.setInput(input_1, "img1");
+                    auto out = net.forward(); // 1x2x320x448
+                    Mat c1(input_0.size[2], input_0.size[3], CV_32F, out.ptr<float>(0, 0));
+                    Mat c2(input_0.size[2], input_0.size[3], CV_32F, out.ptr<float>(0, 1));
+                    vector<Mat> channels = {c1, c2};
+                    cv::merge(channels, flow_cpu);
                 } else {
                     throw std::runtime_error("unknown optical algorithm " + algorithm);
                     return;
                 }
-                flow_gpu.download(flows[i]);
+                if (algorithm == "flownet2") {
+                    flows[i] = flow_cpu.clone();
+                } else {
+                    flow_gpu.download(flows[i]);
+                }
                 total_flows += 1;
             }
         }
@@ -486,7 +533,7 @@ void calcDenseFlowVideoGPU(vector<path> video_paths, vector<path> output_dirs, s
     if (step == 0) {
         flow_video_gpu.extract_frames_only(use_frames, verbose);
     } else {
-        flow_video_gpu.launch(use_frames, save_type, verbose);
+        flow_video_gpu.launch(use_frames, save_type, algorithm, verbose);
     }
     double end_t = CurrentSeconds();
     unsigned long N = flow_video_gpu.get_processed_total_frames();
