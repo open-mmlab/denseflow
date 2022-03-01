@@ -4,6 +4,8 @@ project(DenseFlow)
 option(USE_HDF5 "Whether to build hdf5 for optical flow image saving" OFF)
 option(USE_NVFLOW "Whether to use nvidia hardware optical flow" OFF)
 
+include(FindIconv)
+
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
