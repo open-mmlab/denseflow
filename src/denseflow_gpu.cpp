@@ -113,7 +113,7 @@ void DenseFlow::extract_frames_only(bool use_frames, bool verbose) {
         if (use_frames) {
             directory_iterator end_itr;
             for (directory_iterator itr(video_path); itr != end_itr; ++itr) {
-                if (!is_regular_file(itr->status()) || itr->path().extension() != ".jpg")
+                if (!is_regular_file(itr->status()) || supported_exts.find(itr->path().extension().string()) == string::npos)
                     continue;
                 frames_path.push_back(itr->path());
             }
@@ -246,7 +246,7 @@ void DenseFlow::load_frames(bool use_frames, string save_type, bool verbose) {
         if (use_frames) {
             directory_iterator end_itr;
             for (directory_iterator itr(video_path); itr != end_itr; ++itr) {
-                if (!is_regular_file(itr->status()) || itr->path().extension() != ".jpg")
+                if (!is_regular_file(itr->status()) || supported_exts.find(itr->path().extension().string()) == string::npos)
                     continue;
                 frames_path.push_back(itr->path());
             }
